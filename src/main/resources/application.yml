@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/dating_app?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: root
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/dating_chat
+    redis:
+      host: localhost
+      port: 6379
+
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+    default-property-inclusion: non_null
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.springframework.data.mongodb.core.MongoTemplate: debug
+
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
+
+jwt:
+  secret: ${JWT_SECRET:mySecretKeyForJwtTokenGenerationThatIsLongEnoughForHS256Algorithm}
+  access-token-validity: 1800000    # 30분 (ms)
+  refresh-token-validity: 604800000 # 7일 (ms)
+
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:uploads}
+  base-url: ${FILE_BASE_URL:http://localhost:8080/uploads}
+
+spring.servlet.multipart:
+  max-file-size: 5MB
+  max-request-size: 10MB

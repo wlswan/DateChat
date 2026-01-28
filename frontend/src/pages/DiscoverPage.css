@@ -1,0 +1,55 @@
+.discover-container {
+  min-height: 100vh;
+  background: #f8f9fa;
+  padding-bottom: 80px;
+}
+
+.discover-header {
+  padding: 20px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+  color: white;
+}
+
+.discover-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.discover-content {
+  padding: 30px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+}
+
+.empty-state h2 {
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #888;
+}
+
+.error-message {
+  background: #ffe6e6;
+  color: #d63031;
+  padding: 12px 20px;
+  text-align: center;
+}
