@@ -29,4 +29,11 @@ public class ChatService {
         return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
     }
 
+    public void markMessagesAsRead(Long roomId, Long readerId) {
+        List<ChatMessage> unReadMessages = chatMessageRepository.findByRoomIdAndSenderIdNotAndReadAtIsNull(roomId, readerId);
+
+        unReadMessages.forEach(ChatMessage::markAsRead);
+
+        chatMessageRepository.saveAll(unReadMessages);
+    }
 }
