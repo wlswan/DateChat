@@ -2,10 +2,13 @@ package com.example.dateServer.profile.entity;
 
 import com.example.dateServer.auth.entity.User;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserHobby {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

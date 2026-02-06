@@ -32,7 +32,6 @@ public class SwipeService {
         if(savedSwipe.getType() == SwipeType.LIKE && swipeRepository.existsByFromUserAndToUserAndType(toUser, fromUser, SwipeType.LIKE)) {
             Match match = Match.builder().user1(fromUser)
                     .user2(toUser)
-                    .chatRoomId(null)
                     .build();
             matchRepository.save(match);
             return true;

@@ -8,5 +8,5 @@ import org.springframework.stereotype.Repository;
 public interface SwipeRepository extends JpaRepository<Swipe,Long> {
     boolean existsByFromUserAndToUser(User fromUser, User toUser);
 
-    boolean existsByFromUserAndToUserAndType(User fromUser, User toUser,SwipeType type);
+    boolean existsByFromUserAndToUserAndType(User fromUser, User toUser, SwipeType type);
 }

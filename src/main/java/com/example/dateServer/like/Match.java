@@ -4,12 +4,13 @@ import com.example.dateServer.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Match {
 
@@ -23,9 +24,6 @@ public class Match {
     @ManyToOne(fetch = FetchType.LAZY ,optional = false)
     private User user2;
 
-    @Column(nullable = true)
-    private Long chatRoomId;
-
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -34,9 +32,8 @@ public class Match {
     }
 
     @Builder
-    public Match(User user1, User user2, Long chatRoomId) {
+    public Match(User user1, User user2) {
         this.user1 = user1;
         this.user2 = user2;
-        this.chatRoomId = chatRoomId;
     }
 }
