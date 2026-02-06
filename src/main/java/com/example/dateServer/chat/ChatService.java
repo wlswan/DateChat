@@ -4,9 +4,6 @@ import com.example.dateServer.like.Match;
 import com.example.dateServer.like.MatchRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -25,8 +22,13 @@ public class ChatService {
         return chatMessageRepository.save(message);
     }
 
-    public List<ChatMessage> getMessagesByRoomId(Long roomId) {
-        return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
+    public List<ChatMessage> getMessagesByRoomId(Long userId, Long roomId) {
+        Match match = matchRepository.findById(roomId).orElseThrow(IllegalArgumentException::new);
+        if (!(match.getUser1().getId().equals(userId))&& !(match.getUser2().getId().equals(userId))) {
+            throw new IllegalArgumentException("접근 권한 없음");
+        }
+
+        return chatMessageRepository.findByRoomIdOrderByCreatedAtDesc(roomId);
     }
 
     public void markMessagesAsRead(Long roomId, Long readerId) {
