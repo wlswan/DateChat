@@ -43,10 +43,3 @@ jwt:
   access-token-validity: 1800000    # 30분 (ms)
   refresh-token-validity: 604800000 # 7일 (ms)
 
-file:
-  upload-dir: ${FILE_UPLOAD_DIR:uploads}
-  base-url: ${FILE_BASE_URL:http://localhost:8080/uploads}
-
-spring.servlet.multipart:
-  max-file-size: 5MB
-  max-request-size: 10MB
