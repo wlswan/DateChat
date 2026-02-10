@@ -1,6 +1,6 @@
 package com.example.dateServer.dto;
 
-import com.example.dateServer.auth.entity.Lang;
+import com.example.dateServer.common.Lang;
 import com.example.dateServer.auth.entity.User;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

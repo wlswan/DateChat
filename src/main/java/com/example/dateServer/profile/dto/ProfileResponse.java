@@ -1,7 +1,7 @@
 package com.example.dateServer.profile.dto;
 
 import com.example.dateServer.auth.entity.Gender;
-import com.example.dateServer.auth.entity.Lang;
+import com.example.dateServer.common.Lang;
 import com.example.dateServer.auth.entity.User;
 import lombok.Builder;
 import lombok.Getter;
