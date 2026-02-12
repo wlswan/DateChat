@@ -8,7 +8,7 @@ public interface VectorStore {
 
     Optional<SearchResult> search(float[] embedding, Lang sourceLang, Lang targetLang);
 
-    void save(String id, float[] embedding, String original, String translated,
+    void save(float[] embedding, String original, String translated,
               Lang sourceLang, Lang targetLang);
 
     void clear(Lang sourceLang, Lang targetLang);
