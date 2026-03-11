@@ -25,6 +25,8 @@ public class ChatMessage {
 
     private String content;
 
+    private String translatedContent;
+
     @CreatedDate
     private LocalDateTime createdAt;
 
@@ -39,5 +41,9 @@ public class ChatMessage {
 
     public void markAsRead() {
         this.readAt = LocalDateTime.now();
+    }
+
+    public void updateTranslation(String translatedContent) {
+        this.translatedContent = translatedContent;
     }
 }

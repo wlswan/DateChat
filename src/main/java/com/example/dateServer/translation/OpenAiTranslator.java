@@ -21,7 +21,7 @@ public class OpenAiTranslator implements Translator {
 
     private final ObjectMapper objectMapper;
 
-    @Value("${openai.api-key}")
+    @Value("${openai.api.key}")
     private String apiKey;
 
     @Value("${openai.translation.model:gpt-4o-mini}")

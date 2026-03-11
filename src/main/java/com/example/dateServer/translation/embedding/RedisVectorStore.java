@@ -1,4 +1,4 @@
-package com.example.dateServer.translation;
+package com.example.dateServer.translation.embedding;
 
 import com.example.dateServer.common.Lang;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -86,7 +86,7 @@ public class RedisVectorStore implements VectorStore {
     }
 
     @Override
-    public Optional<com.example.dateServer.translation.SearchResult> search(float[] embedding, Lang sourceLang, Lang targetLang) {
+    public Optional<com.example.dateServer.translation.embedding.SearchResult> search(float[] embedding, Lang sourceLang, Lang targetLang) {
         try {
             byte[] vectorBytes = floatArrayToBytes(embedding);
 
@@ -120,7 +120,7 @@ public class RedisVectorStore implements VectorStore {
             String translated = doc.getString("translated");
 
             log.info("Cache hit: score={}, original={}", similarity, original);
-            return Optional.of(new com.example.dateServer.translation.SearchResult(
+            return Optional.of(new com.example.dateServer.translation.embedding.SearchResult(
                     doc.getId(), original, translated, similarity));
 
         } catch (Exception e) {

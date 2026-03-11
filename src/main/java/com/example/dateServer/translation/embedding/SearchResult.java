@@ -1,4 +1,4 @@
-package com.example.dateServer.translation;
+package com.example.dateServer.translation.embedding;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

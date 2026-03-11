@@ -17,8 +17,16 @@ public class ChatController {
 
     @MessageMapping("/chat.send")
     public void sendMessage(ChatMessageRequest request) {
-        chatService.saveMessage(request);
+        ChatMessage saved = chatService.saveMessage(request);
+        request.setMessageId(saved.getId());
         chatPublisher.publish(request);
+
+        chatService.requestTranslation(
+                saved.getId(),
+                request.getRoomId(),
+                request.getSenderId(),
+                request.getContent()
+        );
     }
 
     @MessageMapping("/chat.read")

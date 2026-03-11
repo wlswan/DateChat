@@ -1,52 +1,42 @@
-package com.example.dateServer.translation;
+package com.example.dateServer.translation.embedding;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@Component
-@RequiredArgsConstructor
-public class OllamaEmbeddingClient implements EmbeddingClient {
+public class OpenAiEmbeddingClient implements EmbeddingClient {
 
+    private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final String model;
 
-    @Value("${ollama.base-url:http://localhost:11434}")
-    private String baseUrl;
-
-    @Value("${ollama.embedding.model:nomic-embed-text}")
-    private String model;
-
-    private RestClient restClient;
-
-    @PostConstruct
-    public void init() {
+    public OpenAiEmbeddingClient(String apiKey, String model, ObjectMapper objectMapper) {
         this.restClient = RestClient.builder()
-                .baseUrl(baseUrl)
+                .baseUrl("https://api.openai.com/v1")
+                .defaultHeader("Authorization", "Bearer " + apiKey)
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .build();
+        this.model = model;
+        this.objectMapper = objectMapper;
     }
 
     @Override
     public float[] embed(String text) {
         try {
             String response = restClient.post()
-                    .uri("/api/embeddings")
-                    .body(Map.of("model", model, "prompt", text))
+                    .uri("/embeddings")
+                    .body(Map.of("model", model, "input", text))
                     .retrieve()
                     .body(String.class);
 
             JsonNode root = objectMapper.readTree(response);
-            JsonNode embeddingNode = root.path("embedding");
+            JsonNode embeddingNode = root.path("data").get(0).path("embedding");
 
             float[] embedding = new float[embeddingNode.size()];
             for (int i = 0; i < embeddingNode.size(); i++) {
@@ -73,6 +63,6 @@ public class OllamaEmbeddingClient implements EmbeddingClient {
 
     @Override
     public int dimension() {
-        return 768; // nomic-embed-text 기본 차원
+        return 1536; // text-embedding-3-small
     }
 }

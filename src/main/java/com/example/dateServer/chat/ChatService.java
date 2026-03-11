@@ -1,17 +1,24 @@
 package com.example.dateServer.chat;
 
+import com.example.dateServer.auth.entity.User;
+import com.example.dateServer.common.Lang;
 import com.example.dateServer.like.Match;
 import com.example.dateServer.like.MatchRepository;
+import com.example.dateServer.translation.TranslationRequestPublisher;
+import com.example.dateServer.translation.dto.TranslationRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final MatchRepository matchRepository;
+    private final TranslationRequestPublisher translationRequestPublisher;
 
     public ChatMessage saveMessage(ChatMessageRequest request) {
         ChatMessage message = ChatMessage.builder()
@@ -37,5 +44,36 @@ public class ChatService {
         unReadMessages.forEach(ChatMessage::markAsRead);
 
         chatMessageRepository.saveAll(unReadMessages);
+    }
+
+    public void requestTranslation(String messageId, Long roomId, Long senderId, String content) {
+        Match match = matchRepository.findById(roomId).orElse(null);
+        if (match == null) {
+            log.warn("방이 존재 하지 않습니다.: {}", roomId);
+            return;
+        }
+
+        User sender = match.getUser1().getId().equals(senderId) ? match.getUser1() : match.getUser2();
+        User receiver = match.getUser1().getId().equals(senderId) ? match.getUser2() : match.getUser1();
+
+        Lang sourceLang = sender.getLang();
+        Lang targetLang = receiver.getLang();
+
+        if (sourceLang == targetLang) {
+            log.debug("같은 언어로 번역 시도: {}", messageId);
+            return;
+        }
+
+        TranslationRequest request = TranslationRequest.builder()
+                .messageId(messageId)
+                .roomId(roomId)
+                .senderId(senderId)
+                .content(content)
+                .sourceLang(sourceLang)
+                .targetLang(targetLang)
+                .build();
+
+        translationRequestPublisher.publish(request);
+        log.info("메시지큐에 번역 전달: {}", messageId);
     }
 }

@@ -1,14 +1,14 @@
-package com.example.dateServer.translation;
+package com.example.dateServer.translation.embedding;
 
 import com.example.dateServer.common.Lang;
+import com.example.dateServer.translation.TranslationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
+//@Component
 @Profile("prod")
 @RequiredArgsConstructor
 public class TranslationCacheLoader implements CommandLineRunner {
