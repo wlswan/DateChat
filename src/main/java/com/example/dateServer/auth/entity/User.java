@@ -1,5 +1,6 @@
 package com.example.dateServer.auth.entity;
 
+import com.example.dateServer.common.Lang;
 import com.example.dateServer.like.Swipe;
 import com.example.dateServer.profile.entity.Hobby;
 import com.example.dateServer.profile.entity.UserHobby;

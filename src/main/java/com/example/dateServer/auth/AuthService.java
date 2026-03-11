@@ -3,8 +3,11 @@ package com.example.dateServer.auth;
 import com.example.dateServer.auth.dto.LoginRequest;
 import com.example.dateServer.auth.dto.TokenPairs;
 import com.example.dateServer.auth.entity.User;
+import com.example.dateServer.auth.exception.DuplicateEmailException;
+import com.example.dateServer.auth.exception.InvalidPasswordException;
+import com.example.dateServer.auth.exception.UserNotFoundException;
 import com.example.dateServer.auth.repository.UserRepository;
-import com.example.dateServer.dto.SignupRequest;
+import com.example.dateServer.auth.dto.SignupRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,7 +22,7 @@ public class AuthService {
     public User signUp(SignupRequest signupRequest) {
         String email = signupRequest.getEmail();
         if(userRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException();
+            throw new DuplicateEmailException(email);
         }
         String encodedPassword = passwordEncoder.encode(signupRequest.getPassword());
 
@@ -38,10 +41,10 @@ public class AuthService {
         String email = loginRequest.getEmail();
         String password = loginRequest.getPassword();
 
-        User user = userRepository.findUserByEmail(email).orElseThrow(() -> new IllegalArgumentException());
+        User user = userRepository.findUserByEmail(email).orElseThrow(() -> new UserNotFoundException(email));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new IllegalArgumentException();
+            throw new InvalidPasswordException();
         }
 
         String accessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail());
