@@ -1,5 +1,6 @@
-package com.example.dateServer.chat;
+package com.example.dateServer.chat.controller;
 
+import com.example.dateServer.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,6 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ChatRestController {
 
     private final ChatService chatService;
+
+    @GetMapping("/rooms")
+    public ResponseEntity<?> getChatRooms(@AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(chatService.getChatRooms(userId));
+    }
 
     @GetMapping("/{roomId}/messages")
     public ResponseEntity<?> getMessages(@AuthenticationPrincipal Long userId,

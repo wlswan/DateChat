@@ -1,6 +1,11 @@
-package com.example.dateServer.chat;
+package com.example.dateServer.chat.service;
 
 import com.example.dateServer.auth.entity.User;
+import com.example.dateServer.chat.dto.ChatMessageRequest;
+import com.example.dateServer.chat.dto.ChatMessageResponse;
+import com.example.dateServer.chat.dto.ChatRoomResponse;
+import com.example.dateServer.chat.entity.ChatMessage;
+import com.example.dateServer.chat.repository.ChatMessageRepository;
 import com.example.dateServer.common.Lang;
 import com.example.dateServer.like.entity.Match;
 import com.example.dateServer.like.repository.MatchRepository;
@@ -32,13 +37,15 @@ public class ChatService {
         return chatMessageRepository.save(message);
     }
 
-    public List<ChatMessage> getMessagesByRoomId(Long userId, Long roomId) {
+    public List<ChatMessageResponse> getMessagesByRoomId(Long userId, Long roomId) {
         Match match = matchRepository.findById(roomId).orElseThrow(IllegalArgumentException::new);
         if (!(match.getUser1().getId().equals(userId))&& !(match.getUser2().getId().equals(userId))) {
             throw new IllegalArgumentException("접근 권한 없음");
         }
 
-        return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
+        return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId).stream()
+                .map(ChatMessageResponse::from)
+                .collect(Collectors.toList());
     }
 
     public void markMessagesAsRead(Long roomId, Long readerId) {
@@ -81,7 +88,7 @@ public class ChatService {
         log.info("메시지큐에 번역 전달: {}", messageId);
     }
 
-    public List<ChatRoomResponse> getUserChatRooms(Long userId) {
+        public List<ChatRoomResponse> getChatRooms(Long userId) {
         List<Match> matches = matchRepository.findMatchesWithUsersByUserId(userId);
 
         return matches.stream()
@@ -89,6 +96,7 @@ public class ChatService {
                     User partner = match.getUser1().getId().equals(userId)
                             ? match.getUser2()
                             : match.getUser1();
+
                     return ChatRoomResponse.builder()
                             .roomId(match.getId())
                             .partnerId(partner.getId())

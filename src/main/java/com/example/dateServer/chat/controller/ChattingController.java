@@ -1,5 +1,11 @@
-package com.example.dateServer.chat;
+package com.example.dateServer.chat.controller;
 
+import com.example.dateServer.chat.*;
+import com.example.dateServer.chat.dto.ChatMessageRequest;
+import com.example.dateServer.chat.dto.ChatReadRequest;
+import com.example.dateServer.chat.entity.ChatMessage;
+import com.example.dateServer.chat.service.ChatPublisher;
+import com.example.dateServer.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -8,7 +14,7 @@ import org.springframework.stereotype.Controller;
 
 @Controller
 @RequiredArgsConstructor
-public class ChatController {
+public class ChattingController {
 
     private final RedisTemplate<String, String> redisTemplate;
     private final ChatPublisher chatPublisher;
@@ -18,14 +24,13 @@ public class ChatController {
     @MessageMapping("/chat.send")
     public void sendMessage(ChatMessageRequest request) {
         ChatMessage saved = chatService.saveMessage(request);
-        request.setMessageId(saved.getId());
-        chatPublisher.publish(request);
+        chatPublisher.publish(saved);
 
         chatService.requestTranslation(
                 saved.getId(),
-                request.getRoomId(),
-                request.getSenderId(),
-                request.getContent()
+                saved.getRoomId(),
+                saved.getSenderId(),
+                saved.getContent()
         );
     }
 

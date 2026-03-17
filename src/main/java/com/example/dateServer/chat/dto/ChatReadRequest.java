@@ -1,4 +1,4 @@
-package com.example.dateServer.chat;
+package com.example.dateServer.chat.dto;
 
 import lombok.Data;
 

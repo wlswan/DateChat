@@ -1,5 +1,6 @@
-package com.example.dateServer.chat;
+package com.example.dateServer.chat.dto;
 
+import com.example.dateServer.chat.MessageType;
 import lombok.Data;
 
 @Data

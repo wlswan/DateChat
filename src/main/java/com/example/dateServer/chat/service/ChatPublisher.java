@@ -1,5 +1,7 @@
-package com.example.dateServer.chat;
+package com.example.dateServer.chat.service;
 
+import com.example.dateServer.chat.RedisConfig;
+import com.example.dateServer.chat.entity.ChatMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +14,10 @@ public class ChatPublisher {
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    public void publish(ChatMessageRequest request) {
+    public void publish(ChatMessage message) {
         try {
-            String json = objectMapper.writeValueAsString(request);
-            redisTemplate.convertAndSend(RedisConfig.CHAT_CHANNEL,json);
+            String json = objectMapper.writeValueAsString(message);
+            redisTemplate.convertAndSend(RedisConfig.CHAT_CHANNEL, json);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

@@ -1,4 +1,4 @@
-package com.example.dateServer.chat;
+package com.example.dateServer.chat.entity;
 
 import lombok.AccessLevel;
 import lombok.Builder;

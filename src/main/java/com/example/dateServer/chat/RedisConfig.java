@@ -1,5 +1,6 @@
 package com.example.dateServer.chat;
 
+import com.example.dateServer.chat.service.RedisSubscriber;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
