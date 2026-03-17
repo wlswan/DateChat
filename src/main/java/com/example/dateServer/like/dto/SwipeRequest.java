@@ -1,6 +1,6 @@
-package com.example.dateServer.like;
+package com.example.dateServer.like.dto;
 
-import com.example.dateServer.auth.entity.User;
+import com.example.dateServer.like.entity.SwipeType;
 import lombok.Data;
 
 @Data

@@ -2,14 +2,17 @@ package com.example.dateServer.chat;
 
 import com.example.dateServer.auth.entity.User;
 import com.example.dateServer.common.Lang;
-import com.example.dateServer.like.Match;
-import com.example.dateServer.like.MatchRepository;
+import com.example.dateServer.like.entity.Match;
+import com.example.dateServer.like.repository.MatchRepository;
 import com.example.dateServer.translation.TranslationRequestPublisher;
 import com.example.dateServer.translation.dto.TranslationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -35,7 +38,7 @@ public class ChatService {
             throw new IllegalArgumentException("접근 권한 없음");
         }
 
-        return chatMessageRepository.findByRoomIdOrderByCreatedAtDesc(roomId);
+        return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
     }
 
     public void markMessagesAsRead(Long roomId, Long readerId) {
@@ -46,8 +49,9 @@ public class ChatService {
         chatMessageRepository.saveAll(unReadMessages);
     }
 
+    @Transactional
     public void requestTranslation(String messageId, Long roomId, Long senderId, String content) {
-        Match match = matchRepository.findById(roomId).orElse(null);
+        Match match = matchRepository.findByIdWithUsers(roomId).orElse(null);
         if (match == null) {
             log.warn("방이 존재 하지 않습니다.: {}", roomId);
             return;
@@ -75,5 +79,22 @@ public class ChatService {
 
         translationRequestPublisher.publish(request);
         log.info("메시지큐에 번역 전달: {}", messageId);
+    }
+
+    public List<ChatRoomResponse> getUserChatRooms(Long userId) {
+        List<Match> matches = matchRepository.findMatchesWithUsersByUserId(userId);
+
+        return matches.stream()
+                .map(match -> {
+                    User partner = match.getUser1().getId().equals(userId)
+                            ? match.getUser2()
+                            : match.getUser1();
+                    return ChatRoomResponse.builder()
+                            .roomId(match.getId())
+                            .partnerId(partner.getId())
+                            .partnerNickname(partner.getNickname())
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 }

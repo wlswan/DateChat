@@ -1,4 +1,4 @@
-package com.example.dateServer.like;
+package com.example.dateServer.like.entity;
 
 import com.example.dateServer.auth.entity.User;
 import jakarta.persistence.*;
@@ -12,6 +12,10 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "matching",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user1_id", "user2_id"})
+        })
 public class Match {
 
     @Id

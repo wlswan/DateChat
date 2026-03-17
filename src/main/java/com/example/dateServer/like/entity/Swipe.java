@@ -1,4 +1,4 @@
-package com.example.dateServer.like;
+package com.example.dateServer.like.entity;
 
 import com.example.dateServer.auth.entity.User;
 import jakarta.persistence.*;
