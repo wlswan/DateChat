@@ -1,4 +1,4 @@
-package com.example.dateServer.translation;
+package com.example.dateServer.translation.embedding;
 
 import com.example.dateServer.common.Lang;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -78,7 +78,7 @@ public class OpenAiTranslator implements Translator {
 
     private String getLangName(Lang lang) {
         return switch (lang) {
-            case KO -> "Korean";
+            case KR -> "Korean";
             case JP -> "Japanese";
         };
     }

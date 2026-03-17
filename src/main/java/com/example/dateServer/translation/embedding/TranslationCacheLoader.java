@@ -1,7 +1,6 @@
 package com.example.dateServer.translation.embedding;
 
 import com.example.dateServer.common.Lang;
-import com.example.dateServer.translation.TranslationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -44,7 +43,7 @@ public class TranslationCacheLoader implements CommandLineRunner {
 
         for (String[] pair : data) {
             try {
-                translationService.preload(pair[0], pair[1], Lang.KO, Lang.JP);
+                translationService.preload(pair[0], pair[1], Lang.KR, Lang.JP);
             } catch (Exception e) {
                 log.warn("Failed to preload: {} -> {}", pair[0], pair[1], e);
             }
@@ -67,7 +66,7 @@ public class TranslationCacheLoader implements CommandLineRunner {
 
         for (String[] pair : data) {
             try {
-                translationService.preload(pair[0], pair[1], Lang.JP, Lang.KO);
+                translationService.preload(pair[0], pair[1], Lang.JP, Lang.KR);
             } catch (Exception e) {
                 log.warn("Failed to preload: {} -> {}", pair[0], pair[1], e);
             }

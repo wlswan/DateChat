@@ -1,8 +1,6 @@
-package com.example.dateServer.translation;
+package com.example.dateServer.translation.embedding;
 
 import com.example.dateServer.common.Lang;
-import com.example.dateServer.translation.embedding.EmbeddingClient;
-import com.example.dateServer.translation.embedding.VectorStore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
