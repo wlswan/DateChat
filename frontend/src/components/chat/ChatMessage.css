@@ -63,9 +63,21 @@
   color: #666;
 }
 
+.message-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
 .message-time {
   font-size: 11px;
   color: #aaa;
-  margin-top: 4px;
-  padding: 0 4px;
+}
+
+.unread-indicator {
+  font-size: 11px;
+  color: #ff6b6b;
+  font-weight: 600;
 }

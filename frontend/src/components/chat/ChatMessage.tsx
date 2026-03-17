@@ -17,16 +17,16 @@ export function ChatMessage({ message, isOwn }: ChatMessageProps) {
 
   return (
     <div className={`message-wrapper ${isOwn ? 'own' : 'other'}`}>
-      {!isOwn && (
-        <div className="message-sender">{message.senderNickname}</div>
-      )}
       <div className={`message-bubble ${isOwn ? 'own' : 'other'}`}>
-        <div className="message-origin">{message.content.origin}</div>
-        {message.content.trans && message.content.trans !== message.content.origin && (
-          <div className="message-trans">{message.content.trans}</div>
+        <div className="message-origin">{message.content}</div>
+        {message.translatedContent && message.translatedContent !== message.content && (
+          <div className="message-trans">{message.translatedContent}</div>
         )}
       </div>
-      <div className="message-time">{formatTime(message.createdAt)}</div>
+      <div className="message-meta">
+        {isOwn && !message.readAt && <span className="unread-indicator">1</span>}
+        <span className="message-time">{formatTime(message.createdAt)}</span>
+      </div>
     </div>
   );
 }

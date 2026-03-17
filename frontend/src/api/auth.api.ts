@@ -2,23 +2,24 @@ import { apiClient } from './client';
 import type {
   LoginRequest,
   SignUpRequest,
-  TokenResponse,
-  UserResponse,
+  LoginResponse,
+  SignupResponse,
+  ProfileResponse,
 } from '../types/auth.types';
 
 export const authApi = {
-  signUp: async (data: SignUpRequest): Promise<UserResponse> => {
-    const response = await apiClient.post<UserResponse>('/api/auth/signup', data);
+  signUp: async (data: SignUpRequest): Promise<SignupResponse> => {
+    const response = await apiClient.post<SignupResponse>('/api/auth/signup', data);
     return response.data;
   },
 
-  login: async (data: LoginRequest): Promise<TokenResponse> => {
-    const response = await apiClient.post<TokenResponse>('/api/auth/login', data);
+  login: async (data: LoginRequest): Promise<LoginResponse> => {
+    const response = await apiClient.post<LoginResponse>('/api/auth/login', data);
     return response.data;
   },
 
-  getMe: async (): Promise<UserResponse> => {
-    const response = await apiClient.get<UserResponse>('/api/auth/me');
+  getMe: async (): Promise<ProfileResponse> => {
+    const response = await apiClient.get<ProfileResponse>('/api/users/me');
     return response.data;
   },
 };

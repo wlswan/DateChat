@@ -92,7 +92,7 @@ export function MatchListPage() {
               <div className="match-info">
                 <h3 className="match-nickname">{match.partnerNickname}</h3>
                 <span className="match-language">
-                  {getLanguageLabel(match.partnerAppLang)}
+                  {getLanguageLabel(match.partnerLang)}
                 </span>
               </div>
               <div className="match-meta">

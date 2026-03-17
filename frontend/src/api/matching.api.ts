@@ -1,23 +1,29 @@
 import { apiClient } from './client';
-import type { UserCard, MatchResponse, LikeResult } from '../types/matching.types';
+import type { UserCard, MatchResponse, SwipeRequest, SwipeResponse } from '../types/matching.types';
 
 export const matchingApi = {
+  // TODO: Backend endpoint not implemented yet
   getDiscoverUsers: async (): Promise<UserCard[]> => {
-    const response = await apiClient.get<UserCard[]>('/api/discover');
+    const response = await apiClient.get<UserCard[]>('/api/matching/discover');
     return response.data;
   },
 
-  likeUser: async (userId: number): Promise<LikeResult> => {
-    const response = await apiClient.post<LikeResult>(`/api/like/${userId}`);
+  swipe: async (request: SwipeRequest): Promise<SwipeResponse> => {
+    const response = await apiClient.post<SwipeResponse>('/api/matching/swipe', request);
     return response.data;
+  },
+
+  likeUser: async (userId: number): Promise<SwipeResponse> => {
+    return matchingApi.swipe({ toUserId: userId, type: 'LIKE' });
   },
 
   passUser: async (userId: number): Promise<void> => {
-    await apiClient.post(`/api/pass/${userId}`);
+    await matchingApi.swipe({ toUserId: userId, type: 'PASS' });
   },
 
+  // TODO: Backend endpoint not implemented yet
   getMatches: async (): Promise<MatchResponse[]> => {
-    const response = await apiClient.get<MatchResponse[]>('/api/matches');
+    const response = await apiClient.get<MatchResponse[]>('/api/matching/matches');
     return response.data;
   },
 };

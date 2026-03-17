@@ -10,18 +10,20 @@ import {
 import { Client, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { storage } from '../utils/storage';
-import type { ChatMessage, SendMessageRequest } from '../types/chat.types';
+import { useAuth } from '../hooks/useAuth';
+import type { ChatMessage, SendMessageRequest, ChatReadRequest } from '../types/chat.types';
 
 interface WebSocketContextType {
   isConnected: boolean;
   subscribe: (roomId: number, callback: (message: ChatMessage) => void) => void;
   unsubscribe: (roomId: number) => void;
   sendMessage: (request: SendMessageRequest) => void;
+  markAsRead: (request: ChatReadRequest) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
-const SOCKET_URL = 'http://localhost:8080/ws-stomp';
+const SOCKET_URL = 'http://localhost:8080/ws/chat';
 
 interface WebSocketProviderProps {
   children: ReactNode;
@@ -33,10 +35,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const subscriptionsRef = useRef<Map<number, { unsubscribe: () => void }>>(
     new Map()
   );
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const token = storage.getAccessToken();
-    if (!token) return;
+    if (!token || !isAuthenticated) return;
 
     const client = new Client({
       webSocketFactory: () => new SockJS(SOCKET_URL),
@@ -73,7 +76,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       subscriptionsRef.current.clear();
       client.deactivate();
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const subscribe = useCallback(
     (roomId: number, callback: (message: ChatMessage) => void) => {
@@ -90,7 +93,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       }
 
       const subscription = client.subscribe(
-        `/sub/chat/room/${roomId}`,
+        `/topic/chat/${roomId}`,
         (message: IMessage) => {
           try {
             const chatMessage: ChatMessage = JSON.parse(message.body);
@@ -122,7 +125,20 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     }
 
     client.publish({
-      destination: '/pub/chat/message',
+      destination: '/app/chat.send',
+      body: JSON.stringify(request),
+    });
+  }, []);
+
+  const markAsRead = useCallback((request: ChatReadRequest) => {
+    const client = clientRef.current;
+    if (!client || !client.connected) {
+      console.warn('WebSocket not connected, cannot mark as read');
+      return;
+    }
+
+    client.publish({
+      destination: '/app/chat.read',
       body: JSON.stringify(request),
     });
   }, []);
@@ -132,6 +148,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     subscribe,
     unsubscribe,
     sendMessage,
+    markAsRead,
   };
 
   return (

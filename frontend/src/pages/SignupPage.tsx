@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import type { AppLang } from '../types/auth.types';
+import type { Lang } from '../types/auth.types';
 import './AuthPages.css';
 
 export function SignupPage() {
@@ -9,7 +9,7 @@ export function SignupPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [nickname, setNickname] = useState('');
-  const [appLang, setAppLang] = useState<AppLang>('KR');
+  const [lang, setLang] = useState<Lang>('KR');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,7 +28,7 @@ export function SignupPage() {
     setIsSubmitting(true);
 
     try {
-      await signUp({ email, password, nickname, appLang });
+      await signUp({ email, password, nickname, lang });
       navigate('/login');
     } catch (err) {
       setError('회원가입에 실패했습니다. 다시 시도해주세요.');
@@ -98,15 +98,15 @@ export function SignupPage() {
             <div className="lang-selector">
               <button
                 type="button"
-                className={`lang-button ${appLang === 'KR' ? 'active' : ''}`}
-                onClick={() => setAppLang('KR')}
+                className={`lang-button ${lang === 'KR' ? 'active' : ''}`}
+                onClick={() => setLang('KR')}
               >
                 한국어
               </button>
               <button
                 type="button"
-                className={`lang-button ${appLang === 'JP' ? 'active' : ''}`}
-                onClick={() => setAppLang('JP')}
+                className={`lang-button ${lang === 'JP' ? 'active' : ''}`}
+                onClick={() => setLang('JP')}
               >
                 日本語
               </button>

@@ -25,7 +25,7 @@ export function SwipeCard({ user, onLike, onPass }: SwipeCardProps) {
       </div>
       <div className="card-info">
         <h2 className="card-nickname">{user.nickname}</h2>
-        <span className="card-language">{getLanguageLabel(user.appLang)}</span>
+        <span className="card-language">{getLanguageLabel(user.lang)}</span>
       </div>
       <div className="card-actions">
         <button className="action-button pass-button" onClick={onPass}>

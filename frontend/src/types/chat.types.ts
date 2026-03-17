@@ -1,21 +1,20 @@
-export interface MessageContent {
-  origin: string;
-  trans: string;
-}
+export type MessageType = 'MESSAGE' | 'TRANSLATED' | 'READ';
 
 export interface ChatMessage {
   id: string;
   roomId: number;
   senderId: number;
-  senderNickname: string;
-  content: MessageContent;
+  content: string;
+  translatedContent: string | null;
   createdAt: string;
+  readAt: string | null;
+  type?: MessageType;
+  messageId?: string;
 }
 
 export interface SendMessageRequest {
   roomId: number;
   senderId: number;
-  senderNickname: string;
   content: string;
 }
 
@@ -41,4 +40,9 @@ export interface ChatRoomResponse {
 
 export interface CreateRoomRequest {
   targetUserId: number;
+}
+
+export interface ChatReadRequest {
+  roomId: number;
+  readerId: number;
 }

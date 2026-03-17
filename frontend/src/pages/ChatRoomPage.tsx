@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../context/WebSocketContext';
 import { chatroomApi } from '../api/chatroom.api';
-import type { ChatMessage as ChatMessageType, ChatRoomResponse } from '../types/chat.types';
+import type { ChatMessage as ChatMessageType } from '../types/chat.types';
 import { ChatMessage } from '../components/chat/ChatMessage';
 import { MessageInput } from '../components/chat/MessageInput';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
@@ -13,9 +13,8 @@ export function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isConnected, subscribe, unsubscribe, sendMessage } = useWebSocket();
+  const { isConnected, subscribe, unsubscribe, sendMessage, markAsRead } = useWebSocket();
 
-  const [room, setRoom] = useState<ChatRoomResponse | null>(null);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,8 +31,34 @@ export function ChatRoomPage() {
   }, [messages]);
 
   const handleNewMessage = useCallback((message: ChatMessageType) => {
-    setMessages((prev) => [...prev, message]);
-  }, []);
+    if (message.type === 'TRANSLATED' && message.messageId) {
+      // 번역 결과: 기존 메시지 업데이트
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === message.messageId
+            ? { ...msg, translatedContent: message.content }
+            : msg
+        )
+      );
+    } else if (message.type === 'READ') {
+      // 읽음 알림: 내가 보낸 메시지들 읽음 처리
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.senderId === user?.id && !msg.readAt
+            ? { ...msg, readAt: new Date().toISOString() }
+            : msg
+        )
+      );
+    } else {
+      // 일반 메시지: 새로 추가
+      setMessages((prev) => [...prev, message]);
+
+      // 상대방 메시지일 경우 읽음 처리
+      if (message.senderId !== user?.id && roomIdNum) {
+        markAsRead({ roomId: roomIdNum, readerId: user?.id ?? 0 });
+      }
+    }
+  }, [user?.id, roomIdNum, markAsRead]);
 
   useEffect(() => {
     if (!roomIdNum) {
@@ -43,11 +68,7 @@ export function ChatRoomPage() {
 
     const loadRoom = async () => {
       try {
-        const [roomData, messagesData] = await Promise.all([
-          chatroomApi.getRoomDetail(roomIdNum),
-          chatroomApi.getMessages(roomIdNum),
-        ]);
-        setRoom(roomData);
+        const messagesData = await chatroomApi.getMessages(roomIdNum);
         setMessages(messagesData);
       } catch {
         setError('채팅방을 불러오는데 실패했습니다.');
@@ -60,28 +81,27 @@ export function ChatRoomPage() {
   }, [roomIdNum, navigate]);
 
   useEffect(() => {
-    if (isConnected && roomIdNum) {
+    if (isConnected && roomIdNum && user) {
       subscribe(roomIdNum, handleNewMessage);
+      // 채팅방 입장 시 읽음 처리
+      markAsRead({ roomId: roomIdNum, readerId: user.id });
       return () => {
         unsubscribe(roomIdNum);
       };
     }
-  }, [isConnected, roomIdNum, subscribe, unsubscribe, handleNewMessage]);
+  }, [isConnected, roomIdNum, user, subscribe, unsubscribe, handleNewMessage, markAsRead]);
 
   const handleSendMessage = (content: string) => {
     if (!roomIdNum || !user) return;
     sendMessage({
       roomId: roomIdNum,
       senderId: user.id,
-      senderNickname: user.nickname,
       content,
     });
   };
 
   const getPartnerName = () => {
-    if (!room || !user) return '';
-    const partner = room.members.find((m) => m.userId !== user.id);
-    return partner?.nickname || '';
+    return `채팅방 ${roomIdNum}`;
   };
 
   if (isLoading) {

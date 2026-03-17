@@ -1,9 +1,21 @@
-import type { AppLang } from './auth.types';
+import type { Lang } from './auth.types';
+
+export type SwipeType = 'LIKE' | 'PASS';
+
+export interface SwipeRequest {
+  toUserId: number;
+  type: SwipeType;
+}
+
+export interface SwipeResponse {
+  matched: boolean;
+  roomId?: number;
+}
 
 export interface UserCard {
   id: number;
   nickname: string;
-  appLang: AppLang;
+  lang: Lang;
   profileImageUrl: string | null;
 }
 
@@ -11,12 +23,7 @@ export interface MatchResponse {
   matchId: number;
   partnerId: number;
   partnerNickname: string;
-  partnerAppLang: AppLang;
+  partnerLang: Lang;
   partnerProfileImageUrl: string | null;
   matchedAt: string;
-}
-
-export interface LikeResult {
-  matched: boolean;
-  match: MatchResponse | null;
 }

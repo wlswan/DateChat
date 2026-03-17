@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { matchingApi } from '../api/matching.api';
-import { chatroomApi } from '../api/chatroom.api';
-import type { UserCard, MatchResponse } from '../types/matching.types';
+import type { UserCard } from '../types/matching.types';
 import { SwipeCard } from '../components/matching/SwipeCard';
 import { MatchModal } from '../components/matching/MatchModal';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import './DiscoverPage.css';
+
+interface MatchedUserInfo extends UserCard {
+  roomId: number;
+}
 
 export function DiscoverPage() {
   const [users, setUsers] = useState<UserCard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [matchResult, setMatchResult] = useState<MatchResponse | null>(null);
+  const [matchedUser, setMatchedUser] = useState<MatchedUserInfo | null>(null);
 
   const navigate = useNavigate();
 
@@ -38,8 +41,8 @@ export function DiscoverPage() {
 
     try {
       const result = await matchingApi.likeUser(currentUser.id);
-      if (result.matched && result.match) {
-        setMatchResult(result.match);
+      if (result.matched && result.roomId) {
+        setMatchedUser({ ...currentUser, roomId: result.roomId });
       } else {
         moveToNext();
       }
@@ -65,23 +68,13 @@ export function DiscoverPage() {
   };
 
   const handleCloseModal = () => {
-    setMatchResult(null);
+    setMatchedUser(null);
     moveToNext();
   };
 
-  const handleStartChat = async () => {
-    if (!matchResult) return;
-
-    try {
-      const room = await chatroomApi.createOrGetRoom({
-        targetUserId: matchResult.partnerId,
-      });
-      navigate(`/rooms/${room.roomId}`);
-    } catch {
-      setError('채팅방 생성 중 오류가 발생했습니다.');
-      setMatchResult(null);
-      moveToNext();
-    }
+  const handleStartChat = () => {
+    if (!matchedUser) return;
+    navigate(`/rooms/${matchedUser.roomId}`);
   };
 
   if (isLoading) {
@@ -115,9 +108,9 @@ export function DiscoverPage() {
         )}
       </div>
 
-      {matchResult && (
+      {matchedUser && (
         <MatchModal
-          match={matchResult}
+          matchedUser={matchedUser}
           onClose={handleCloseModal}
           onStartChat={handleStartChat}
         />

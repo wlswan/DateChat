@@ -1,13 +1,13 @@
-import type { MatchResponse } from '../../types/matching.types';
+import type { UserCard } from '../../types/matching.types';
 import './MatchModal.css';
 
 interface MatchModalProps {
-  match: MatchResponse;
+  matchedUser: UserCard;
   onClose: () => void;
   onStartChat: () => void;
 }
 
-export function MatchModal({ match, onClose, onStartChat }: MatchModalProps) {
+export function MatchModal({ matchedUser, onClose, onStartChat }: MatchModalProps) {
   return (
     <div className="match-modal-overlay" onClick={onClose}>
       <div className="match-modal" onClick={(e) => e.stopPropagation()}>
@@ -16,24 +16,24 @@ export function MatchModal({ match, onClose, onStartChat }: MatchModalProps) {
             <span className="celebration-emoji">🎉</span>
             <h2 className="match-title">매칭 성공!</h2>
             <p className="match-subtitle">
-              {match.partnerNickname}님과 서로 좋아요를 눌렀어요
+              {matchedUser.nickname}님과 서로 좋아요를 눌렀어요
             </p>
           </div>
 
           <div className="match-partner">
             <div className="partner-avatar">
-              {match.partnerProfileImageUrl ? (
+              {matchedUser.profileImageUrl ? (
                 <img
-                  src={match.partnerProfileImageUrl}
-                  alt={match.partnerNickname}
+                  src={matchedUser.profileImageUrl}
+                  alt={matchedUser.nickname}
                 />
               ) : (
                 <div className="partner-avatar-placeholder">
-                  {match.partnerNickname.charAt(0).toUpperCase()}
+                  {matchedUser.nickname.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
-            <h3 className="partner-nickname">{match.partnerNickname}</h3>
+            <h3 className="partner-nickname">{matchedUser.nickname}</h3>
           </div>
 
           <div className="match-actions">
