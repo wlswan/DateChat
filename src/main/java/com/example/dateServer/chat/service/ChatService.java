@@ -1,6 +1,7 @@
 package com.example.dateServer.chat.service;
 
 import com.example.dateServer.auth.entity.User;
+import com.example.dateServer.chat.dto.ChatMessagePageResponse;
 import com.example.dateServer.chat.dto.ChatMessageRequest;
 import com.example.dateServer.chat.dto.ChatMessageResponse;
 import com.example.dateServer.chat.dto.ChatRoomResponse;
@@ -13,9 +14,13 @@ import com.example.dateServer.translation.TranslationRequestPublisher;
 import com.example.dateServer.translation.dto.TranslationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,15 +42,51 @@ public class ChatService {
         return chatMessageRepository.save(message);
     }
 
-    public List<ChatMessageResponse> getMessagesByRoomId(Long userId, Long roomId) {
-        Match match = matchRepository.findById(roomId).orElseThrow(IllegalArgumentException::new);
-        if (!(match.getUser1().getId().equals(userId))&& !(match.getUser2().getId().equals(userId))) {
+//    public List<ChatMessageResponse> getMessagesByRoomId(Long userId, Long roomId) {
+//        Match match = matchRepository.findById(roomId).orElseThrow(IllegalArgumentException::new);
+//        if (!(match.getUser1().getId().equals(userId))&& !(match.getUser2().getId().equals(userId))) {
+//            throw new IllegalArgumentException("접근 권한 없음");
+//        }
+//
+//        return chatMessageRepository.findByRoomIdOrderByCreatedAtDesc(roomId).stream()
+//                .map(ChatMessageResponse::from)
+//                .collect(Collectors.toList());
+//    }
+
+
+    public ChatMessagePageResponse getMessagesByRoomIdWithCursor(
+            Long userId, Long roomId, LocalDateTime cursor, int size) {
+
+        Match match = matchRepository.findById(roomId).orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
+        if(!match.getUser1().getId().equals(userId) && !match.getUser2().getId().equals(userId)){
             throw new IllegalArgumentException("접근 권한 없음");
         }
+        Pageable pageable = PageRequest.of(0,size+1);
+        List<ChatMessage> messages;
 
-        return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId).stream()
+        if(cursor == null) {
+            messages = chatMessageRepository.findByRoomIdOrderByCreatedAtDesc(roomId, pageable);
+        }
+        else {
+            messages = chatMessageRepository.findByRoomIdAndCreatedAtBeforeOrderByCreatedAtDesc(roomId, cursor, pageable);
+        }
+
+        boolean hasMore = messages.size()>size;
+        if(hasMore) {
+            messages = messages.subList(0, size);
+        }
+
+
+        LocalDateTime nextCursor = messages.isEmpty() ? null : messages.get(messages.size() - 1).getCreatedAt();
+        List<ChatMessageResponse> messageResponses = messages.stream()
                 .map(ChatMessageResponse::from)
-                .collect(Collectors.toList());
+                .toList();
+
+        return ChatMessagePageResponse.builder()
+                .nextCursor(nextCursor)
+                .messages(messageResponses)
+                .hasMore(hasMore)
+                .build();
     }
 
     public void markMessagesAsRead(Long roomId, Long readerId) {
