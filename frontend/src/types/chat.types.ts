@@ -46,3 +46,10 @@ export interface ChatReadRequest {
   roomId: number;
   readerId: number;
 }
+
+// 커서 기반 페이지네이션 응답
+export interface ChatMessagePageResponse {
+  messages: ChatMessage[];
+  nextCursor: string | null;  // ISO DateTime string
+  hasMore: boolean;
+}

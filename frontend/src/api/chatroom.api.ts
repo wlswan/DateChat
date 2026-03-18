@@ -4,6 +4,7 @@ import type {
   ChatRoomResponse,
   CreateRoomRequest,
   ChatMessage,
+  ChatMessagePageResponse,
 } from '../types/chat.types';
 
 export const chatroomApi = {
@@ -30,8 +31,25 @@ export const chatroomApi = {
     await apiClient.delete(`/api/chat/rooms/${roomId}`);
   },
 
+  // 기존 API (하위 호환)
   getMessages: async (roomId: number): Promise<ChatMessage[]> => {
     const response = await apiClient.get<ChatMessage[]>(`/api/chat/${roomId}/messages`);
+    return response.data;
+  },
+
+  // 커서 기반 페이지네이션 API
+  getMessagesWithCursor: async (
+    roomId: number,
+    cursor?: string,
+    size: number = 20
+  ): Promise<ChatMessagePageResponse> => {
+    const params = new URLSearchParams();
+    if (cursor) params.append('cursor', cursor);
+    params.append('size', size.toString());
+
+    const response = await apiClient.get<ChatMessagePageResponse>(
+      `/api/chat/${roomId}/messages/page?${params.toString()}`
+    );
     return response.data;
   },
 };

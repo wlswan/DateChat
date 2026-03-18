@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: dating-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: dating_app
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+
+  mongodb:
+    image: mongo:latest
+    container_name: dating-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo_data:/data/db
+
+  redis:
+    image: redis:latest
+    container_name: dating-redis
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest

@@ -17,9 +17,13 @@ export function ChatRoomPage() {
 
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const roomIdNum = roomId ? parseInt(roomId, 10) : 0;
 
   const scrollToBottom = () => {
@@ -60,6 +64,47 @@ export function ChatRoomPage() {
     }
   }, [user?.id, roomIdNum, markAsRead]);
 
+  // 과거 메시지 로드 (위로 스크롤)
+  const loadMoreMessages = useCallback(async () => {
+    if (!hasMore || isLoadingMore || !nextCursor) return;
+
+    setIsLoadingMore(true);
+    const container = messagesContainerRef.current;
+    const prevScrollHeight = container?.scrollHeight ?? 0;
+
+    try {
+      const response = await chatroomApi.getMessagesWithCursor(roomIdNum, nextCursor);
+      // 과거 메시지를 앞에 붙임 (reverse해서 시간순으로)
+      const olderMessages = [...response.messages].reverse();
+      setMessages((prev) => [...olderMessages, ...prev]);
+      setNextCursor(response.nextCursor);
+      setHasMore(response.hasMore);
+
+      // 스크롤 위치 유지 (새로 로드된 만큼 아래로)
+      requestAnimationFrame(() => {
+        if (container) {
+          container.scrollTop = container.scrollHeight - prevScrollHeight;
+        }
+      });
+    } catch {
+      console.error('과거 메시지 로드 실패');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [roomIdNum, nextCursor, hasMore, isLoadingMore]);
+
+  // 스크롤 이벤트 핸들러
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    // 맨 위에 도달하면 과거 메시지 로드
+    if (container.scrollTop === 0 && hasMore && !isLoadingMore) {
+      loadMoreMessages();
+    }
+  }, [hasMore, isLoadingMore, loadMoreMessages]);
+
+  // 첫 로드
   useEffect(() => {
     if (!roomIdNum) {
       navigate('/rooms');
@@ -68,8 +113,11 @@ export function ChatRoomPage() {
 
     const loadRoom = async () => {
       try {
-        const messagesData = await chatroomApi.getMessages(roomIdNum);
-        setMessages(messagesData);
+        const response = await chatroomApi.getMessagesWithCursor(roomIdNum);
+        // DESC로 온 데이터를 reverse해서 시간순(ASC)으로
+        setMessages([...response.messages].reverse());
+        setNextCursor(response.nextCursor);
+        setHasMore(response.hasMore);
       } catch {
         setError('채팅방을 불러오는데 실패했습니다.');
       } finally {
@@ -139,7 +187,21 @@ export function ChatRoomPage() {
         </div>
       </header>
 
-      <div className="messages-container">
+      <div
+        className="messages-container"
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+      >
+        {isLoadingMore && (
+          <div className="loading-more">
+            <span>이전 메시지 불러오는 중...</span>
+          </div>
+        )}
+        {!hasMore && messages.length > 0 && (
+          <div className="no-more-messages">
+            <span>이전 메시지가 없습니다</span>
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="empty-messages">
             <p>아직 메시지가 없습니다.</p>

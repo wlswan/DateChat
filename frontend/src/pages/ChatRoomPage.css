@@ -90,3 +90,17 @@
   font-size: 14px;
   cursor: pointer;
 }
+
+.loading-more {
+  text-align: center;
+  padding: 12px;
+  color: #888;
+  font-size: 14px;
+}
+
+.no-more-messages {
+  text-align: center;
+  padding: 12px;
+  color: #aaa;
+  font-size: 12px;
+}
