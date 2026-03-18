@@ -81,17 +81,24 @@ WebSocket 기반 실시간 메시지 전송
 ## 환경 설정
 
 
-### 필수 환경 변수
+#### 필수 환경 변수
 
 ```bash
 PINECONE_API_KEY=your-pinecone-api-key
 PINECONE_INDEX_NAME =your-pinecone-index-name
 OPENAI_API_KEY=your-openai-api-key
 ```
-### 저장소
+#### 저장소
 
 | 저장소 | 설명 |
 |--------|------|
 | [translation-worker](https://github.com/wlswan/translation-worker) | RabbitMQ 기반 번역 워커 서버 |
 
 
+#### 초기 데이터 캐싱 데이터 추가 
+
+```bash
+curl -X POST http://localhost:8080/api/init/push \
+  -H "Content-Type: application/json" \
+  -d '[{"original": "안녕", "translated": "こんにちは", "sourceLang": "KR", "targetLang": "JP"}]'
+```
