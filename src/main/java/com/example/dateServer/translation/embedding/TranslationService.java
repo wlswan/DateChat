@@ -1,59 +1,41 @@
 package com.example.dateServer.translation.embedding;
 
 import com.example.dateServer.common.Lang;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TranslationService {
 
-//    private final EmbeddingClient embeddingClient;
-//    private final VectorStore vectorStore;
-    private final Translator translator;
+    private final EmbeddingClient embeddingClient;
+    private final VectorStore vectorStore;
 
-    public TranslationResult translate(String text, Lang sourceLang, Lang targetLang) {
-        return translateWithContext(text, sourceLang, targetLang, null);
-    }
+    public Optional<String> checkCache(String text, Lang sourceLang, Lang targetLang) {
+        float[] embedding = embeddingClient.embed(text);
+        var cacheHit = vectorStore.search(embedding, sourceLang, targetLang);
 
-    public TranslationResult translateWithContext(String text, Lang sourceLang, Lang targetLang,
-                                                   List<String> context) {
-        if (sourceLang == targetLang) {
-            return new TranslationResult(text, text, false);
+        if (cacheHit.isPresent()) {
+            log.info("[캐시 히트] 원본: '{}' -> 번역: '{}'", text, cacheHit.get().getTranslated());
+            return Optional.of(cacheHit.get().getTranslated());
         }
 
-        // float[] embedding = embeddingClient.embedWithContext(text, context);
-        //
-        // var cacheHit = vectorStore.search(embedding, sourceLang, targetLang);
-        //
-        // if (cacheHit.isPresent()) {
-        //     log.info("Cache hit (score={}): {}", cacheHit.get().getScore(), text);
-        //     return new TranslationResult(text, cacheHit.get().getTranslated(), true);
-        // }
-
-        String translated = translator.translate(text, sourceLang, targetLang);
-
-        // vectorStore.save(embedding, text, translated, sourceLang, targetLang);
-
-        return new TranslationResult(text, translated, false);
+        log.info("[캐시 미스] 원본: '{}'", text);
+        return Optional.empty();
     }
+
+    public void saveToCache(String original, String translated, Lang sourceLang, Lang targetLang) {
+        float[] embedding = embeddingClient.embed(original);
+        vectorStore.save(embedding, original, translated, sourceLang, targetLang);
+        log.info("[캐시 저장] 원본: '{}' -> 번역: '{}'", original, translated);
+    }
+
 
     public void preload(String original, String translated, Lang sourceLang, Lang targetLang) {
-        // float[] embedding = embeddingClient.embed(original);
-        // vectorStore.save(embedding, original, translated, sourceLang, targetLang);
-    }
-
-    @Getter
-    @AllArgsConstructor
-    public static class TranslationResult {
-        private final String original;
-        private final String translated;
-        private final boolean cached;
+        saveToCache(original, translated, sourceLang, targetLang);
     }
 }

@@ -60,3 +60,8 @@ management:
 openai:
   api:
     key: ${OPENAI_API_KEY:}
+
+pinecone:
+  api-key: ${PINECONE_API_KEY:}
+  index-name: ${PINECONE_INDEX_NAME:translation-cache}
+  similarity-threshold: 0.90

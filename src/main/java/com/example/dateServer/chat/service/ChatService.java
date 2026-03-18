@@ -12,8 +12,12 @@ import com.example.dateServer.like.entity.Match;
 import com.example.dateServer.like.repository.MatchRepository;
 import com.example.dateServer.translation.TranslationRequestPublisher;
 import com.example.dateServer.translation.dto.TranslationRequest;
+import com.example.dateServer.translation.embedding.TranslationService;
+import com.example.dateServer.chat.MessageType;
+import com.example.dateServer.chat.dto.ChatMessageRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,6 +37,8 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final MatchRepository matchRepository;
     private final TranslationRequestPublisher translationRequestPublisher;
+    private final TranslationService translationService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ChatMessage saveMessage(ChatMessageRequest request) {
         ChatMessage message = ChatMessage.builder()
@@ -116,6 +123,29 @@ public class ChatService {
             return;
         }
 
+        Optional<String> cached = translationService.checkCache(content, sourceLang, targetLang);
+
+        if (cached.isPresent()) {
+            String translated = cached.get();
+
+            ChatMessage message = chatMessageRepository.findById(messageId).orElse(null);
+            if (message != null) {
+                message.updateTranslation(translated);
+                chatMessageRepository.save(message);
+            }
+
+            ChatMessageRequest notification = new ChatMessageRequest();
+            notification.setType(MessageType.TRANSLATED);
+            notification.setRoomId(roomId);
+            notification.setSenderId(senderId);
+            notification.setContent(translated);
+            notification.setMessageId(messageId);
+
+            messagingTemplate.convertAndSend("/topic/chat/" + roomId, notification);
+            log.info("캐시 히트로 즉시 번역 완료: {}", messageId);
+            return;
+        }
+
         TranslationRequest request = TranslationRequest.builder()
                 .messageId(messageId)
                 .roomId(roomId)
@@ -126,7 +156,6 @@ public class ChatService {
                 .build();
 
         translationRequestPublisher.publish(request);
-        log.info("메시지큐에 번역 전달: {}", messageId);
     }
 
         public List<ChatRoomResponse> getChatRooms(Long userId) {
