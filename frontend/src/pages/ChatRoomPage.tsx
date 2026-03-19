@@ -59,7 +59,7 @@ export function ChatRoomPage() {
 
       // 상대방 메시지일 경우 읽음 처리
       if (message.senderId !== user?.id && roomIdNum) {
-        markAsRead({ roomId: roomIdNum, readerId: user?.id ?? 0 });
+        markAsRead({ roomId: roomIdNum });
       }
     }
   }, [user?.id, roomIdNum, markAsRead]);
@@ -132,7 +132,7 @@ export function ChatRoomPage() {
     if (isConnected && roomIdNum && user) {
       subscribe(roomIdNum, handleNewMessage);
       // 채팅방 입장 시 읽음 처리
-      markAsRead({ roomId: roomIdNum, readerId: user.id });
+      markAsRead({ roomId: roomIdNum });
       return () => {
         unsubscribe(roomIdNum);
       };
@@ -143,7 +143,6 @@ export function ChatRoomPage() {
     if (!roomIdNum || !user) return;
     sendMessage({
       roomId: roomIdNum,
-      senderId: user.id,
       content,
     });
   };

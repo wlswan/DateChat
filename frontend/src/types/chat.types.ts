@@ -14,7 +14,6 @@ export interface ChatMessage {
 
 export interface SendMessageRequest {
   roomId: number;
-  senderId: number;
   content: string;
 }
 
@@ -44,7 +43,6 @@ export interface CreateRoomRequest {
 
 export interface ChatReadRequest {
   roomId: number;
-  readerId: number;
 }
 
 // 커서 기반 페이지네이션 응답
