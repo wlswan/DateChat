@@ -15,9 +15,7 @@ public interface UserRepository extends JpaRepository<User,Long> {
 
     boolean existsByEmail(String email);
 
-    @Query("SELECT u FROM User u WHERE u.id != :userId AND u.id NOT IN :excludedIds")
-    List<User> findDiscoverCandidates(@Param("userId") Long userId, @Param("excludedIds") List<Long> excludedIds);
-
-    @Query("SELECT u FROM User u WHERE u.id != :userId")
-    List<User> findAllExceptUser(@Param("userId") Long userId);
+    @Query("SELECT u FROM User u WHERE u.id != :userId AND u.id NOT IN " +
+            "(SELECT s.toUser.id FROM Swipe s WHERE s.fromUser.id = :userId)")
+    List<User> findDiscoverCandidates(@Param("userId") Long userId);
 }

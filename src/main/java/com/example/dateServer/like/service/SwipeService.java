@@ -27,16 +27,7 @@ public class SwipeService {
 
     @Transactional(readOnly = true)
     public List<UserProfileResponse> getDiscoverUsers(Long userId) {
-        List<Long> swipedUserIds = swipeRepository.findSwipedUserIdsByMe(userId);
-
-        List<User> candidates;
-        if (swipedUserIds.isEmpty()) {
-            candidates = userRepository.findAllExceptUser(userId);
-        } else {
-            candidates = userRepository.findDiscoverCandidates(userId, swipedUserIds);
-        }
-
-        return candidates.stream()
+        return userRepository.findDiscoverCandidates(userId).stream()
                 .map(UserProfileResponse::from)
                 .collect(Collectors.toList());
     }
