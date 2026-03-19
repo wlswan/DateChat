@@ -7,6 +7,7 @@ import com.example.dateServer.chat.dto.ChatSendRequest;
 import com.example.dateServer.chat.entity.ChatMessage;
 import com.example.dateServer.chat.service.ChatPublisher;
 import com.example.dateServer.chat.service.ChatService;
+import com.example.dateServer.common.Lang;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -26,6 +27,8 @@ public class ChattingController {
     @MessageMapping("/chat.send")
     public void sendMessage(ChatSendRequest request, SimpMessageHeaderAccessor accessor) {
         Long userId = StompChannelInterceptor.getUserId(accessor);
+        Lang userLang = StompChannelInterceptor.getUserLang(accessor);
+        Lang targetLang = StompChannelInterceptor.getTargetLang(accessor, request.getRoomId());
         if (userId == null) {
             log.warn("인증되지 않은 사용자의 메시지 전송 시도");
             return;
@@ -43,7 +46,9 @@ public class ChattingController {
                 saved.getId(),
                 saved.getRoomId(),
                 saved.getSenderId(),
-                saved.getContent()
+                saved.getContent(),
+                userLang,
+                targetLang
         );
     }
 

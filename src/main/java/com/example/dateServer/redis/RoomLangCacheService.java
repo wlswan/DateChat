@@ -7,13 +7,11 @@ import com.example.dateServer.like.repository.MatchRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class RoomLangCacheService {
     private final RedisTemplate<String, String> redisTemplate;

@@ -11,7 +11,6 @@ import com.example.dateServer.like.entity.Swipe;
 import com.example.dateServer.like.entity.SwipeType;
 import com.example.dateServer.like.repository.MatchRepository;
 import com.example.dateServer.like.repository.SwipeRepository;
-import com.example.dateServer.redis.RoomLangCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +24,6 @@ public class SwipeService {
     private final SwipeRepository swipeRepository;
     private final UserRepository userRepository;
     private final MatchRepository matchRepository;
-    private final RoomLangCacheService roomLangCacheService;
 
     @Transactional(readOnly = true)
     public List<UserProfileResponse> getDiscoverUsers(Long userId) {
@@ -64,7 +62,6 @@ public class SwipeService {
                     .user2(toUser)
                     .build();
             Match savedMatch = matchRepository.save(match);
-            roomLangCacheService.save(savedMatch.getId(),fromUser,toUser);
             return new SwipeResult(true, savedMatch.getId());
         }
         return new SwipeResult(false, null);

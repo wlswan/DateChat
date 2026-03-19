@@ -10,8 +10,6 @@ import com.example.dateServer.chat.repository.ChatMessageRepository;
 import com.example.dateServer.common.Lang;
 import com.example.dateServer.like.entity.Match;
 import com.example.dateServer.like.repository.MatchRepository;
-import com.example.dateServer.redis.LangPair;
-import com.example.dateServer.redis.RoomLangCacheService;
 import com.example.dateServer.translation.TranslationRequestPublisher;
 import com.example.dateServer.translation.dto.TranslationRequest;
 import com.example.dateServer.translation.embedding.TranslationService;
@@ -40,7 +38,6 @@ public class ChatService {
     private final TranslationRequestPublisher translationRequestPublisher;
     private final TranslationService translationService;
     private final SimpMessagingTemplate messagingTemplate;
-    private final RoomLangCacheService roomLangCacheService;
 
     public ChatMessage saveMessage(ChatMessageRequest request) {
         ChatMessage message = ChatMessage.builder()
@@ -107,12 +104,7 @@ public class ChatService {
     }
 
     @Transactional
-    public void requestTranslation(String messageId, Long roomId, Long senderId, String content) {
-
-        LangPair langs = roomLangCacheService.get(roomId, senderId);
-        Lang sourceLang = langs.getSourceLang();
-        Lang targetLang = langs.getTargetLang();
-
+    public void requestTranslation(String messageId, Long roomId, Long senderId, String content,Lang sourceLang, Lang targetLang) {
         if (sourceLang == targetLang) {
             log.debug("같은 언어로 번역 시도: {}", messageId);
             return;

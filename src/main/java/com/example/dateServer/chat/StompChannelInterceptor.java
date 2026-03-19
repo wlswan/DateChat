@@ -1,6 +1,12 @@
 package com.example.dateServer.chat;
 
 import com.example.dateServer.auth.JwtProvider;
+import com.example.dateServer.auth.entity.User;
+import com.example.dateServer.auth.exception.UserNotFoundException;
+import com.example.dateServer.auth.repository.UserRepository;
+import com.example.dateServer.common.Lang;
+import com.example.dateServer.like.entity.Match;
+import com.example.dateServer.like.repository.MatchRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -12,6 +18,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
@@ -20,8 +27,12 @@ import java.util.Map;
 public class StompChannelInterceptor implements ChannelInterceptor {
 
     private final JwtProvider jwtProvider;
+    private final UserRepository userRepository;
+    private final MatchRepository matchRepository;
 
     private static final String USER_ID_KEY = "userId";
+    private static final String USER_LANG_KEY = "userLang";
+    private static final String TARGET_LANG_KEY = "targetLangs";
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -38,7 +49,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
                 handleConnect(accessor);
                 break;
             case SUBSCRIBE:
-                validateAuthentication(accessor, "구독");
+                handleSubscribe(accessor);
                 break;
             case SEND:
                 validateAuthentication(accessor, "메시지 전송");
@@ -67,13 +78,45 @@ public class StompChannelInterceptor implements ChannelInterceptor {
         }
 
         Long userId = jwtProvider.getUserId(token);
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+        Lang myLang = user.getLang();
+
         Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
 
         if (sessionAttributes != null) {
             sessionAttributes.put(USER_ID_KEY, userId);
-            log.info("WebSocket 연결 성공: userId={}", userId);
+            sessionAttributes.put(USER_LANG_KEY, myLang);
+            sessionAttributes.put(TARGET_LANG_KEY, new HashMap<Long, Lang>());
+            log.info("WebSocket 연결 성공: userId={}, userLang={}", userId, myLang);
         }
     }
+
+    private void handleSubscribe(StompHeaderAccessor accessor) {
+        String destination = accessor.getDestination();
+
+        if (destination == null || !destination.startsWith("/topic/chat/")) {
+            return;
+        }
+
+        // /topic/chat/123
+        Long roomId = getRoomId(destination);
+        Long userId = getUserIdFromSession(accessor);
+
+        Match match = matchRepository.findByIdWithUsers(roomId).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅방입니다"));
+        Lang targetLang = match.getUser1().getId().equals(userId) ? match.getUser2().getLang() : match.getUser1().getLang();
+
+        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+        Map<Long, Lang> targetLangs = (Map<Long, Lang>) sessionAttributes.get(TARGET_LANG_KEY);
+
+        targetLangs.put(roomId, targetLang);
+        log.info("채팅방 구독: userId={}, roomId={}, targetLang={}", userId, roomId, targetLang);
+    }
+
+    private void handleDisconnect(StompHeaderAccessor accessor) {
+        Long userId = getUserIdFromSession(accessor);
+        log.info("WebSocket 연결 종료: userId={}", userId);
+    }
+
 
     private void validateAuthentication(StompHeaderAccessor accessor, String action) {
         Long userId = getUserIdFromSession(accessor);
@@ -84,11 +127,6 @@ public class StompChannelInterceptor implements ChannelInterceptor {
         }
     }
 
-    private void handleDisconnect(StompHeaderAccessor accessor) {
-        Long userId = getUserIdFromSession(accessor);
-        log.info("WebSocket 연결 종료: userId={}", userId);
-    }
-
     private Long getUserIdFromSession(StompHeaderAccessor accessor) {
         Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
         if (sessionAttributes == null) {
@@ -97,11 +135,30 @@ public class StompChannelInterceptor implements ChannelInterceptor {
         return (Long) sessionAttributes.get(USER_ID_KEY);
     }
 
+    private static Long getRoomId(String destination) {
+        String[] splits = destination.split("/");
+        Long roomId = Long.parseLong(splits[splits.length - 1]);
+        return roomId;
+    }
+
     public static Long getUserId(SimpMessageHeaderAccessor accessor) {
         Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
         if (sessionAttributes == null) {
             return null;
         }
         return (Long) sessionAttributes.get(USER_ID_KEY);
+    }
+
+    public static Lang getUserLang(SimpMessageHeaderAccessor accessor) {
+        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+        if (sessionAttributes == null) return null;
+        return (Lang) sessionAttributes.get(USER_LANG_KEY);
+    }
+
+    public static Lang getTargetLang(SimpMessageHeaderAccessor accessor, Long roomId) {
+        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+        if (sessionAttributes == null) return null;
+        Map<Long, Lang> targetLangs = (Map<Long, Lang>) sessionAttributes.get(TARGET_LANG_KEY);
+        return targetLangs != null ? targetLangs.get(roomId) : null;
     }
 }
