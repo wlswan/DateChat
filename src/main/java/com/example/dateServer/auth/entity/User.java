@@ -1,5 +1,6 @@
 package com.example.dateServer.auth.entity;
 
+import com.example.dateServer.auth.ProfileUpdateRequest;
 import com.example.dateServer.common.Lang;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -54,5 +55,12 @@ public class User {
         this.lang = lang;
         this.gender = gender;
         this.birthDate = birthDate;
+    }
+
+    public void updateProfile(ProfileUpdateRequest request) {
+        this.gender = request.getGender();
+        this.birthDate = request.getBirthDate();
+        this.bio = request.getBio();
+        this.profileImageUrl = request.getProfileImageUrl();
     }
 }

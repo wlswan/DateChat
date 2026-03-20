@@ -1,8 +1,6 @@
 package com.example.dateServer.like.controller;
 
-import com.example.dateServer.like.dto.SwipeRequest;
-import com.example.dateServer.like.dto.SwipeResult;
-import com.example.dateServer.like.dto.UserProfileResponse;
+import com.example.dateServer.like.dto.*;
 import com.example.dateServer.like.service.SwipeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,5 +30,19 @@ public class MatchController {
             return ResponseEntity.ok(Map.of("matched", true, "roomId", result.getRoomId()));
         }
         return ResponseEntity.ok(Map.of("matched", false));
+    }
+
+    @GetMapping("/matches")
+    public ResponseEntity<?> getMatches(@AuthenticationPrincipal Long userId) {
+        List<MatchResponse> matches = swipeService.getMatches(userId);
+        return ResponseEntity.ok(matches);
+    }
+
+    @GetMapping("/matches/{matchId}")
+    public ResponseEntity<?> getMatchInfo(@AuthenticationPrincipal Long userId,
+                                          @PathVariable Long matchId) {
+        MatchDetailResponse response = swipeService.getMatchDetail(userId, matchId);
+        return ResponseEntity.ok(response);
+
     }
 }
