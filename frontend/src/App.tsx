@@ -9,6 +9,7 @@ import { ChatRoomListPage } from './pages/ChatRoomListPage';
 import { ChatRoomPage } from './pages/ChatRoomPage';
 import { DiscoverPage } from './pages/DiscoverPage';
 import { MatchListPage } from './pages/MatchListPage';
+import { MatchDetailPage } from './pages/MatchDetailPage';
 import { useAuth } from './hooks/useAuth';
 
 function AppContent() {
@@ -17,6 +18,7 @@ function AppContent() {
 
   const showBottomNav = isAuthenticated &&
     !location.pathname.startsWith('/rooms/') &&
+    !location.pathname.match(/^\/matches\/\d+$/) &&
     location.pathname !== '/login' &&
     location.pathname !== '/signup';
 
@@ -28,6 +30,7 @@ function AppContent() {
         <Route element={<ProtectedRoute />}>
           <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/matches" element={<MatchListPage />} />
+          <Route path="/matches/:matchId" element={<MatchDetailPage />} />
           <Route path="/rooms" element={<ChatRoomListPage />} />
           <Route path="/rooms/:roomId" element={<ChatRoomPage />} />
         </Route>

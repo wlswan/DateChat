@@ -4,11 +4,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: var(--spacing-md);
   animation: fadeIn 0.3s ease;
 }
 
@@ -22,51 +24,51 @@
 }
 
 .match-modal {
-  background: white;
-  border-radius: 24px;
-  padding: 40px;
-  max-width: 360px;
-  width: 90%;
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  max-width: 380px;
+  width: 100%;
   text-align: center;
-  animation: slideUp 0.4s ease;
+  animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes slideUp {
+@keyframes modalSlideUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .match-celebration {
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-xl);
 }
 
 .celebration-emoji {
-  font-size: 60px;
+  font-size: 72px;
   display: block;
-  margin-bottom: 15px;
-  animation: bounce 0.6s ease infinite alternate;
+  margin-bottom: var(--spacing-md);
+  animation: celebrateBounce 0.8s ease infinite;
 }
 
-@keyframes bounce {
-  from {
-    transform: translateY(0);
+@keyframes celebrateBounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
   }
-  to {
-    transform: translateY(-10px);
+  50% {
+    transform: translateY(-12px) scale(1.1);
   }
 }
 
 .match-title {
-  margin: 0 0 8px 0;
-  font-size: 28px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 32px;
+  font-weight: 800;
+  background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -75,20 +77,22 @@
 .match-subtitle {
   margin: 0;
   font-size: 16px;
-  color: #666;
+  color: var(--gray-600);
+  line-height: 1.5;
 }
 
 .match-partner {
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-xl);
 }
 
 .partner-avatar {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
+  width: 110px;
+  height: 110px;
+  border-radius: var(--radius-full);
   overflow: hidden;
-  margin: 0 auto 15px;
-  border: 4px solid #ff6b6b;
+  margin: 0 auto var(--spacing-md);
+  border: 4px solid var(--primary);
+  box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.2);
 }
 
 .partner-avatar img {
@@ -100,57 +104,61 @@
 .partner-avatar-placeholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #fecfef 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
+  font-size: 44px;
   font-weight: 700;
-  color: white;
+  color: var(--white);
 }
 
 .partner-nickname {
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gray-900);
 }
 
 .match-actions {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-sm);
 }
 
 .chat-button {
-  padding: 16px;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+  padding: var(--spacing-md);
+  background: var(--primary-gradient);
   border: none;
-  border-radius: 12px;
-  color: white;
+  border-radius: var(--radius-md);
+  color: var(--white);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all var(--transition-normal);
 }
 
 .chat-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(255, 107, 107, 0.4);
+  box-shadow: var(--shadow-primary);
+}
+
+.chat-button:active {
+  transform: translateY(0);
 }
 
 .continue-button {
-  padding: 16px;
-  background: #f0f0f0;
+  padding: var(--spacing-md);
+  background: var(--gray-100);
   border: none;
-  border-radius: 12px;
-  color: #666;
+  border-radius: var(--radius-md);
+  color: var(--gray-700);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all var(--transition-normal);
 }
 
 .continue-button:hover {
-  background: #e0e0e0;
+  background: var(--gray-200);
 }

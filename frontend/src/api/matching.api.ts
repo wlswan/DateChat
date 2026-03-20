@@ -1,8 +1,7 @@
 import { apiClient } from './client';
-import type { UserCard, MatchResponse, SwipeRequest, SwipeResponse } from '../types/matching.types';
+import type { UserCard, MatchResponse, MatchDetailResponse, SwipeRequest, SwipeResponse } from '../types/matching.types';
 
 export const matchingApi = {
-  // TODO: Backend endpoint not implemented yet
   getDiscoverUsers: async (): Promise<UserCard[]> => {
     const response = await apiClient.get<UserCard[]>('/api/matching/discover');
     return response.data;
@@ -21,9 +20,13 @@ export const matchingApi = {
     await matchingApi.swipe({ toUserId: userId, type: 'PASS' });
   },
 
-  // TODO: Backend endpoint not implemented yet
   getMatches: async (): Promise<MatchResponse[]> => {
     const response = await apiClient.get<MatchResponse[]>('/api/matching/matches');
+    return response.data;
+  },
+
+  getMatchDetail: async (matchId: number): Promise<MatchDetailResponse> => {
+    const response = await apiClient.get<MatchDetailResponse>(`/api/matching/matches/${matchId}`);
     return response.data;
   },
 };

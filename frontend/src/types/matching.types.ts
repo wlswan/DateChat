@@ -1,6 +1,7 @@
-import type { Lang } from './auth.types';
+import type { AppLang, Gender } from './auth.types';
 
 export type SwipeType = 'LIKE' | 'PASS';
+export type Lang = AppLang;
 
 export interface SwipeRequest {
   toUserId: number;
@@ -24,6 +25,18 @@ export interface MatchResponse {
   partnerId: number;
   partnerNickname: string;
   partnerLang: Lang;
+  partnerProfileImageUrl: string | null;
+  matchedAt: string;
+}
+
+export interface MatchDetailResponse {
+  matchId: number;
+  partnerId: number;
+  partnerNickname: string;
+  partnerLang: Lang;
+  partnerGender: Gender;
+  partnerBirthDate: string;
+  partnerBio: string | null;
   partnerProfileImageUrl: string | null;
   matchedAt: string;
 }

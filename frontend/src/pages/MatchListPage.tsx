@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { matchingApi } from '../api/matching.api';
-import { chatroomApi } from '../api/chatroom.api';
 import type { MatchResponse } from '../types/matching.types';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import './MatchListPage.css';
@@ -28,15 +27,8 @@ export function MatchListPage() {
     }
   };
 
-  const handleMatchClick = async (match: MatchResponse) => {
-    try {
-      const room = await chatroomApi.createOrGetRoom({
-        targetUserId: match.partnerId,
-      });
-      navigate(`/rooms/${room.roomId}`);
-    } catch {
-      setError('채팅방을 열 수 없습니다.');
-    }
+  const handleMatchClick = (match: MatchResponse) => {
+    navigate(`/matches/${match.matchId}`);
   };
 
   const formatDate = (dateString: string) => {
@@ -66,7 +58,7 @@ export function MatchListPage() {
       <div className="match-list">
         {matches.length === 0 ? (
           <div className="empty-state">
-            <span className="empty-icon">💝</span>
+            <div className="empty-state-icon">💝</div>
             <h2>아직 매칭이 없어요</h2>
             <p>발견 탭에서 마음에 드는 사람을 찾아보세요!</p>
           </div>

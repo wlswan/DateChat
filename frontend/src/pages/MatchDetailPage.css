@@ -1,0 +1,223 @@
+.match-detail-container {
+  min-height: 100vh;
+  background: var(--gray-50);
+  padding-bottom: 100px;
+}
+
+.match-detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.match-detail-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.match-detail-header .back-button {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 16px;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  margin: calc(var(--spacing-sm) * -1);
+  border-radius: var(--radius-full);
+  transition: background var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.match-detail-header .back-button:hover {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.profile-card {
+  background: var(--white);
+  margin: var(--spacing-md);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.profile-image {
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #fecfef 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.profile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-placeholder {
+  font-size: 140px;
+  font-weight: 700;
+  color: var(--white);
+  text-transform: uppercase;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.profile-info {
+  padding: var(--spacing-lg);
+}
+
+.profile-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.profile-age {
+  font-weight: 400;
+  color: var(--gray-600);
+}
+
+.profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.tag {
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.tag.language::before {
+  content: '🌐';
+  font-size: 12px;
+}
+
+.tag.gender::before {
+  content: '👤';
+  font-size: 12px;
+}
+
+.profile-bio {
+  margin-bottom: var(--spacing-lg);
+}
+
+.profile-bio h3 {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin: 0 0 var(--spacing-sm) 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.profile-bio p {
+  font-size: 16px;
+  color: var(--gray-800);
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.match-date {
+  color: var(--gray-500);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.match-date::before {
+  content: '💝';
+  font-size: 14px;
+}
+
+.action-buttons {
+  padding: 0 var(--spacing-md);
+}
+
+.action-buttons .chat-button {
+  width: 100%;
+  padding: var(--spacing-md);
+  background: var(--primary-gradient);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.action-buttons .chat-button::before {
+  content: '💬';
+  font-size: 18px;
+}
+
+.action-buttons .chat-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-primary);
+}
+
+.action-buttons .chat-button:active {
+  transform: translateY(0);
+}
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: var(--spacing-lg);
+  color: var(--gray-600);
+  padding: var(--spacing-lg);
+  text-align: center;
+}
+
+.error-state p {
+  margin: 0;
+  font-size: 16px;
+}
+
+.error-state .back-button {
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--primary-gradient);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.error-state .back-button:hover {
+  box-shadow: var(--shadow-primary);
+  transform: translateY(-2px);
+}

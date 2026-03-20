@@ -3,22 +3,79 @@
 }
 
 :root {
+  /* Colors */
+  --primary: #ff6b6b;
+  --primary-light: #ff8e8e;
+  --primary-dark: #e85555;
+  --primary-gradient: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #ff5252 0%, #ff7b7b 100%);
+
+  --secondary: #6c5ce7;
+  --secondary-light: #a29bfe;
+
+  --success: #00b894;
+  --warning: #fdcb6e;
+  --error: #d63031;
+  --error-bg: #ffe6e6;
+
+  /* Neutrals */
+  --white: #ffffff;
+  --gray-50: #f8f9fa;
+  --gray-100: #f1f3f5;
+  --gray-200: #e9ecef;
+  --gray-300: #dee2e6;
+  --gray-400: #ced4da;
+  --gray-500: #adb5bd;
+  --gray-600: #868e96;
+  --gray-700: #495057;
+  --gray-800: #343a40;
+  --gray-900: #212529;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.15);
+  --shadow-primary: 0 4px 20px rgba(255, 107, 107, 0.35);
+
+  /* Typography */
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #333;
-  background-color: #ffffff;
+  color: var(--gray-800);
+  background-color: var(--white);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--gray-50);
 }
 
 #root {
@@ -26,18 +83,116 @@ body {
 }
 
 a {
-  color: #ff6b6b;
+  color: var(--primary);
   text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
 a:hover {
-  text-decoration: underline;
+  color: var(--primary-dark);
 }
 
 button {
   font-family: inherit;
+  cursor: pointer;
 }
 
 input, textarea {
   font-family: inherit;
+}
+
+/* Common utility classes */
+.page-container {
+  min-height: 100vh;
+  background: var(--gray-50);
+  padding-bottom: 80px;
+}
+
+.page-header {
+  padding: var(--spacing-lg) var(--spacing-md);
+  background: var(--primary-gradient);
+  color: var(--white);
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.error-message {
+  background: var(--error-bg);
+  color: var(--error);
+  padding: var(--spacing-md);
+  text-align: center;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.error-message::before {
+  content: '⚠️';
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: 120px;
+  height: 120px;
+  background: var(--gray-100);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  margin-bottom: var(--spacing-lg);
+}
+
+.empty-state h2 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+/* Avatar */
+.avatar {
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #fecfef 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--white);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }

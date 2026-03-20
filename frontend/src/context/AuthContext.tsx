@@ -51,7 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (data: LoginRequest) => {
     const tokenResponse = await authApi.login(data);
-    storage.setTokens(tokenResponse.accessToken, tokenResponse.refreshToken);
+    storage.setAccessToken(tokenResponse.accessToken);
     const userData = await authApi.getMe();
     setUser(userData);
   };

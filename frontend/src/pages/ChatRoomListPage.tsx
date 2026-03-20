@@ -63,8 +63,9 @@ export function ChatRoomListPage() {
       <div className="chatroom-list">
         {rooms.length === 0 ? (
           <div className="empty-state">
-            <p>아직 채팅방이 없습니다.</p>
-            <p>새로운 인연을 만나보세요!</p>
+            <div className="empty-state-icon">💬</div>
+            <h2>아직 채팅이 없어요</h2>
+            <p>매칭된 상대와 대화를 시작해보세요!</p>
           </div>
         ) : (
           rooms.map((room) => (

@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../context/WebSocketContext';
 import { chatroomApi } from '../api/chatroom.api';
+import { matchingApi } from '../api/matching.api';
 import type { ChatMessage as ChatMessageType } from '../types/chat.types';
+import type { MatchDetailResponse } from '../types/matching.types';
 import { ChatMessage } from '../components/chat/ChatMessage';
 import { MessageInput } from '../components/chat/MessageInput';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
@@ -16,6 +18,7 @@ export function ChatRoomPage() {
   const { isConnected, subscribe, unsubscribe, sendMessage, markAsRead } = useWebSocket();
 
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
+  const [partner, setPartner] = useState<MatchDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState('');
@@ -113,11 +116,15 @@ export function ChatRoomPage() {
 
     const loadRoom = async () => {
       try {
-        const response = await chatroomApi.getMessagesWithCursor(roomIdNum);
+        const [messagesResponse, partnerResponse] = await Promise.all([
+          chatroomApi.getMessagesWithCursor(roomIdNum),
+          matchingApi.getMatchDetail(roomIdNum),
+        ]);
         // DESC로 온 데이터를 reverse해서 시간순(ASC)으로
-        setMessages([...response.messages].reverse());
-        setNextCursor(response.nextCursor);
-        setHasMore(response.hasMore);
+        setMessages([...messagesResponse.messages].reverse());
+        setNextCursor(messagesResponse.nextCursor);
+        setHasMore(messagesResponse.hasMore);
+        setPartner(partnerResponse);
       } catch {
         setError('채팅방을 불러오는데 실패했습니다.');
       } finally {
@@ -147,8 +154,8 @@ export function ChatRoomPage() {
     });
   };
 
-  const getPartnerName = () => {
-    return `채팅방 ${roomIdNum}`;
+  const getLanguageLabel = (lang: string) => {
+    return lang === 'KR' ? '한국어' : '日本語';
   };
 
   if (isLoading) {
@@ -178,10 +185,19 @@ export function ChatRoomPage() {
             <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
           </svg>
         </button>
+        <div className="header-avatar">
+          {partner?.partnerProfileImageUrl ? (
+            <img src={partner.partnerProfileImageUrl} alt={partner.partnerNickname} />
+          ) : (
+            <div className="header-avatar-placeholder">
+              {partner?.partnerNickname?.charAt(0).toUpperCase() || '?'}
+            </div>
+          )}
+        </div>
         <div className="header-info">
-          <h2>{getPartnerName()}</h2>
+          <h2>{partner?.partnerNickname || '로딩 중...'}</h2>
           <span className={`connection-status ${isConnected ? 'connected' : ''}`}>
-            {isConnected ? '연결됨' : '연결 중...'}
+            {isConnected ? (partner ? getLanguageLabel(partner.partnerLang) : '연결됨') : '연결 중...'}
           </span>
         </div>
       </header>

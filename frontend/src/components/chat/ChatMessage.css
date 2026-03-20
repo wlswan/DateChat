@@ -1,8 +1,20 @@
 .message-wrapper {
   display: flex;
   flex-direction: column;
-  margin-bottom: 16px;
-  max-width: 75%;
+  margin-bottom: var(--spacing-md);
+  max-width: 80%;
+  animation: messageAppear 0.2s ease;
+}
+
+@keyframes messageAppear {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message-wrapper.own {
@@ -17,67 +29,72 @@
 
 .message-sender {
   font-size: 12px;
-  color: #888;
-  margin-bottom: 4px;
-  margin-left: 12px;
+  color: var(--gray-500);
+  margin-bottom: var(--spacing-xs);
+  margin-left: var(--spacing-sm);
+  font-weight: 500;
 }
 
 .message-bubble {
-  padding: 12px 16px;
-  border-radius: 18px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: 20px;
   max-width: 100%;
   word-break: break-word;
+  box-shadow: var(--shadow-sm);
 }
 
 .message-bubble.own {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
-  color: white;
-  border-bottom-right-radius: 4px;
+  background: var(--primary-gradient);
+  color: var(--white);
+  border-bottom-right-radius: 6px;
 }
 
 .message-bubble.other {
-  background: #f0f0f0;
-  color: #333;
-  border-bottom-left-radius: 4px;
+  background: var(--white);
+  color: var(--gray-800);
+  border-bottom-left-radius: 6px;
 }
 
 .message-origin {
   font-size: 15px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .message-trans {
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
   font-size: 13px;
-  font-style: italic;
-  opacity: 0.85;
+  line-height: 1.4;
 }
 
 .message-bubble.own .message-trans {
-  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  opacity: 0.9;
 }
 
 .message-bubble.other .message-trans {
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  color: #666;
+  border-top: 1px solid var(--gray-200);
+  color: var(--gray-600);
 }
 
 .message-meta {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 4px;
-  padding: 0 4px;
+  gap: 6px;
+  margin-top: var(--spacing-xs);
+  padding: 0 var(--spacing-xs);
 }
 
 .message-time {
   font-size: 11px;
-  color: #aaa;
+  color: var(--gray-400);
 }
 
 .unread-indicator {
   font-size: 11px;
-  color: #ff6b6b;
-  font-weight: 600;
+  color: var(--primary);
+  font-weight: 700;
+  background: rgba(255, 107, 107, 0.1);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
 }

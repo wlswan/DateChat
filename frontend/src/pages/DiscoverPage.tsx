@@ -95,7 +95,7 @@ export function DiscoverPage() {
       <div className="discover-content">
         {hasNoMoreUsers ? (
           <div className="empty-state">
-            <span className="empty-icon">👀</span>
+            <div className="empty-state-icon">👀</div>
             <h2>더 이상 추천할 유저가 없어요</h2>
             <p>나중에 다시 확인해보세요!</p>
           </div>
