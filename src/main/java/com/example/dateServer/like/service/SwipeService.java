@@ -1,7 +1,9 @@
 package com.example.dateServer.like.service;
 
 import com.example.dateServer.auth.entity.User;
+import com.example.dateServer.auth.entity.UserPreference;
 import com.example.dateServer.auth.exception.UserNotFoundException;
+import com.example.dateServer.auth.repository.UserPreferenceRepository;
 import com.example.dateServer.auth.repository.UserRepository;
 import com.example.dateServer.like.dto.*;
 import com.example.dateServer.like.entity.Match;
@@ -22,12 +24,22 @@ public class SwipeService {
     private final SwipeRepository swipeRepository;
     private final UserRepository userRepository;
     private final MatchRepository matchRepository;
+    private final UserPreferenceRepository userPreferenceRepository;
 
     @Transactional(readOnly = true)
     public List<UserProfileResponse> getDiscoverUsers(Long userId) {
-        return userRepository.findDiscoverCandidates(userId).stream()
+        User user = userRepository.findById(userId).orElseThrow(()->new UserNotFoundException(userId));
+
+        UserPreference pref = userPreferenceRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("선호 설정이 없습니다."));
+
+        return userRepository.findDiscoverCandidates(userId
+                        , user.getGender()
+                        , user.getLang()
+                        , pref.getMinAge()
+                        , pref.getMaxAge()).stream()
                 .map(UserProfileResponse::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional

@@ -41,6 +41,9 @@ public class User {
 
     private LocalDateTime createdAt;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private UserPreference userPreference;
+
 
     @PrePersist
     public void prePersist(){
@@ -62,5 +65,15 @@ public class User {
         this.birthDate = request.getBirthDate();
         this.bio = request.getBio();
         this.profileImageUrl = request.getProfileImageUrl();
+    }
+
+    public void createPreference(Integer minAge, Integer maxAge, Integer minHeight, Integer maxHeight) {
+        this.userPreference = UserPreference.builder()
+                .user(this)
+                .minAge(minAge)
+                .maxAge(maxAge)
+                .minHeight(minHeight)
+                .maxHeight(maxHeight)
+                .build();
     }
 }

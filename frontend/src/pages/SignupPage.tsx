@@ -5,7 +5,7 @@ import { authApi } from '../api/auth.api';
 import type { AppLang, Gender } from '../types/auth.types';
 import './AuthPages.css';
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 export function SignupPage() {
   const [step, setStep] = useState<Step>(1);
@@ -24,6 +24,12 @@ export function SignupPage() {
   // Step 3: Bio
   const [bio, setBio] = useState('');
   const [profileImageUrl, setProfileImageUrl] = useState('');
+
+  // Step 4: Preference
+  const [minAge, setMinAge] = useState(18);
+  const [maxAge, setMaxAge] = useState(40);
+  const [minHeight, setMinHeight] = useState(140);
+  const [maxHeight, setMaxHeight] = useState(200);
 
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,6 +57,8 @@ export function SignupPage() {
         return;
       }
       setStep(3);
+    } else if (step === 3) {
+      setStep(4);
     }
   };
 
@@ -80,6 +88,14 @@ export function SignupPage() {
         profileImageUrl: profileImageUrl || undefined,
       });
 
+      // 4. Update preference
+      await authApi.updatePreference({
+        minAge,
+        maxAge,
+        minHeight,
+        maxHeight,
+      });
+
       navigate('/discover');
     } catch (err) {
       setError('회원가입에 실패했습니다. 다시 시도해주세요.');
@@ -95,12 +111,14 @@ export function SignupPage() {
           <span className={step >= 1 ? 'active' : ''}>1</span>
           <span className={step >= 2 ? 'active' : ''}>2</span>
           <span className={step >= 3 ? 'active' : ''}>3</span>
+          <span className={step >= 4 ? 'active' : ''}>4</span>
         </div>
 
         <h1 className="auth-title">
           {step === 1 && '계정 만들기'}
           {step === 2 && '프로필 설정'}
           {step === 3 && '자기소개'}
+          {step === 4 && '선호도 설정'}
         </h1>
 
         {error && <div className="auth-error">{error}</div>}
@@ -229,7 +247,7 @@ export function SignupPage() {
 
         {/* Step 3: Bio */}
         {step === 3 && (
-          <form onSubmit={handleSubmit} className="auth-form">
+          <form onSubmit={handleNext} className="auth-form">
             <div className="form-group">
               <label htmlFor="bio">자기소개 (선택)</label>
               <textarea
@@ -250,6 +268,68 @@ export function SignupPage() {
                 onChange={(e) => setProfileImageUrl(e.target.value)}
                 placeholder="https://example.com/image.jpg"
               />
+            </div>
+
+            <div className="button-group">
+              <button type="button" className="auth-button secondary" onClick={handleBack}>
+                이전
+              </button>
+              <button type="submit" className="auth-button">
+                다음
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 4: Preference */}
+        {step === 4 && (
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-group">
+              <label>선호 나이</label>
+              <div className="range-inputs">
+                <input
+                  type="number"
+                  value={minAge}
+                  onChange={(e) => setMinAge(Number(e.target.value))}
+                  min={18}
+                  max={100}
+                  placeholder="최소"
+                />
+                <span>~</span>
+                <input
+                  type="number"
+                  value={maxAge}
+                  onChange={(e) => setMaxAge(Number(e.target.value))}
+                  min={18}
+                  max={100}
+                  placeholder="최대"
+                />
+                <span>세</span>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>선호 키</label>
+              <div className="range-inputs">
+                <input
+                  type="number"
+                  value={minHeight}
+                  onChange={(e) => setMinHeight(Number(e.target.value))}
+                  min={100}
+                  max={250}
+                  placeholder="최소"
+                />
+                <span>~</span>
+                <input
+                  type="number"
+                  value={maxHeight}
+                  onChange={(e) => setMaxHeight(Number(e.target.value))}
+                  min={100}
+                  max={250}
+                  placeholder="최대"
+                />
+                <span>cm</span>
+              </div>
             </div>
 
             <div className="button-group">

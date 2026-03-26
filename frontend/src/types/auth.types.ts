@@ -54,3 +54,18 @@ export interface SignupResponse {
   email: string;
   nickname: string;
 }
+
+export interface UserPreferenceRequest {
+  minAge: number;
+  maxAge: number;
+  minHeight: number;
+  maxHeight: number;
+}
+
+export interface UserPreferenceResponse {
+  id: number;
+  minAge: number;
+  maxAge: number;
+  minHeight: number;
+  maxHeight: number;
+}
