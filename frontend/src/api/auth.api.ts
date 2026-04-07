@@ -35,4 +35,8 @@ export const authApi = {
     const response = await apiClient.patch<UserPreferenceResponse>('/api/users/preference', data);
     return response.data;
   },
+
+  logout: async (): Promise<void> => {
+    await apiClient.post('/api/auth/logout');
+  },
 };

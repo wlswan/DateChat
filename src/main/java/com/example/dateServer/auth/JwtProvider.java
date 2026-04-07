@@ -75,5 +75,8 @@ public class JwtProvider {
         }
     }
 
-
+    public long getRemainingTtl(String token) {
+        Date expiration = getClaims(token).getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.dateServer.auth;
 
+import com.example.dateServer.auth.service.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +20,7 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -27,7 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
 
-        if(StringUtils.hasText(token) && jwtProvider.validateToken(token)) {
+        if(StringUtils.hasText(token)
+                && jwtProvider.validateToken(token)
+                && !tokenBlacklistService.isBlacklisted(token)) {
             Long userId = jwtProvider.getUserId(token);
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
 

@@ -15,7 +15,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (data: LoginRequest) => Promise<void>;
   signUp: (data: SignUpRequest) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -60,9 +60,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await authApi.signUp(data);
   };
 
-  const logout = () => {
-    storage.clearTokens();
-    setUser(null);
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // 서버 에러가 발생해도 클라이언트 측 로그아웃은 진행
+    } finally {
+      storage.clearTokens();
+      setUser(null);
+    }
   };
 
   const value: AuthContextType = {
