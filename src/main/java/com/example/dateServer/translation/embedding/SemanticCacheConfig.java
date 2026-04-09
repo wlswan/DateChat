@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class PineconeConfig {
+public class SemanticCacheConfig {
 
     @Value("${openai.api.key}")
     private String openaiApiKey;
