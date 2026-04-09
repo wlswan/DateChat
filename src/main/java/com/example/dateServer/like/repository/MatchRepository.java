@@ -14,4 +14,7 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 
     @Query("SELECT m FROM Match m JOIN FETCH m.user1 JOIN FETCH m.user2 WHERE m.id = :id")
     Optional<Match> findByIdWithUsers(@Param("id") Long id);
+
+    @Query("SELECT m FROM Match m WHERE (m.user1.id = :userId1 AND m.user2.id = :userId2) OR (m.user1.id = :userId2 AND m.user2.id = :userId1)")
+    Optional<Match> findByUserIds(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 }

@@ -12,6 +12,7 @@ import com.example.dateServer.like.entity.SwipeType;
 import com.example.dateServer.like.repository.MatchRepository;
 import com.example.dateServer.like.repository.SwipeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,13 +60,27 @@ public class SwipeService {
         Swipe savedSwipe = swipeRepository.save(swipe);
 
         if (savedSwipe.getType() == SwipeType.LIKE && swipeRepository.existsByFromUserAndToUserAndType(toUser, fromUser, SwipeType.LIKE)) {
-            Match match = Match.builder().user1(fromUser)
-                    .user2(toUser)
+            return createMatchSafely(fromUser, toUser);
+        }
+        return new SwipeResult(false, null);
+    }
+
+    private SwipeResult createMatchSafely(User fromUser, User toUser) {
+        User user1 = fromUser.getId() < toUser.getId() ? fromUser : toUser;
+        User user2 = fromUser.getId() < toUser.getId() ? toUser : fromUser;
+
+        try {
+            Match match = Match.builder()
+                    .user1(user1)
+                    .user2(user2)
                     .build();
             Match savedMatch = matchRepository.save(match);
             return new SwipeResult(true, savedMatch.getId());
+        } catch (DataIntegrityViolationException e) {
+            Match existingMatch = matchRepository.findByUserIds(fromUser.getId(), toUser.getId())
+                    .orElseThrow(() -> new IllegalStateException("매칭 생성 중 오류 발생"));
+            return new SwipeResult(true, existingMatch.getId());
         }
-        return new SwipeResult(false, null);
     }
 
     public List<MatchResponse> getMatches(Long userId) {

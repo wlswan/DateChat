@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"from_user_id", "to_user_id"})
+})
 public class Swipe {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
