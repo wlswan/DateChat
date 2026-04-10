@@ -11,14 +11,17 @@ import { Client, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { storage } from '../utils/storage';
 import { useAuth } from '../hooks/useAuth';
-import type { ChatMessage, SendMessageRequest, ChatReadRequest } from '../types/chat.types';
+import type { ChatMessage, ChatEvent, SendMessageRequest, ChatReadRequest } from '../types/chat.types';
 
 interface WebSocketContextType {
   isConnected: boolean;
   subscribe: (roomId: number, callback: (message: ChatMessage) => void) => void;
   unsubscribe: (roomId: number) => void;
+  subscribeToEvents: (roomId: number, callback: (event: ChatEvent) => void) => void;
+  unsubscribeFromEvents: (roomId: number) => void;
   sendMessage: (request: SendMessageRequest) => void;
   markAsRead: (request: ChatReadRequest) => void;
+  subscribeToErrors: (callback: (message: string) => void) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -32,9 +35,10 @@ interface WebSocketProviderProps {
 export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const [isConnected, setIsConnected] = useState(false);
   const clientRef = useRef<Client | null>(null);
-  const subscriptionsRef = useRef<Map<number, { unsubscribe: () => void }>>(
-    new Map()
-  );
+  const subscriptionsRef = useRef<Map<number, { unsubscribe: () => void }>>(new Map());
+  const eventSubscriptionsRef = useRef<Map<number, { unsubscribe: () => void }>>(new Map());
+  const errorCallbackRef = useRef<((message: string) => void) | null>(null);
+  const errorSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -57,6 +61,16 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     client.onConnect = () => {
       console.log('WebSocket connected');
       setIsConnected(true);
+
+      const errorSub = client.subscribe('/user/queue/errors', (message: IMessage) => {
+        try {
+          const body = JSON.parse(message.body);
+          errorCallbackRef.current?.(body.message);
+        } catch {
+          errorCallbackRef.current?.(message.body);
+        }
+      });
+      errorSubscriptionRef.current = errorSub;
     };
 
     client.onDisconnect = () => {
@@ -65,7 +79,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     };
 
     client.onStompError = (frame) => {
-      console.error('STOMP error:', frame.headers['message']);
+      const message = frame.headers['message'];
+      console.error('STOMP error:', message);
+      if (message?.includes('종료된 채팅방')) {
+        errorCallbackRef.current?.('종료된 채팅방입니다.');
+      }
     };
 
     client.activate();
@@ -74,6 +92,10 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     return () => {
       subscriptionsRef.current.forEach((sub) => sub.unsubscribe());
       subscriptionsRef.current.clear();
+      eventSubscriptionsRef.current.forEach((sub) => sub.unsubscribe());
+      eventSubscriptionsRef.current.clear();
+      errorSubscriptionRef.current?.unsubscribe();
+      errorSubscriptionRef.current = null;
       client.deactivate();
     };
   }, [isAuthenticated]);
@@ -109,6 +131,38 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     []
   );
 
+  const subscribeToEvents = useCallback(
+    (roomId: number, callback: (event: ChatEvent) => void) => {
+      const client = clientRef.current;
+      if (!client || !client.connected) return;
+
+      const existingSub = eventSubscriptionsRef.current.get(roomId);
+      if (existingSub) existingSub.unsubscribe();
+
+      const subscription = client.subscribe(
+        `/topic/chat/${roomId}/events`,
+        (message: IMessage) => {
+          try {
+            const event: ChatEvent = JSON.parse(message.body);
+            callback(event);
+          } catch (error) {
+            console.error('Failed to parse event:', error);
+          }
+        }
+      );
+      eventSubscriptionsRef.current.set(roomId, subscription);
+    },
+    []
+  );
+
+  const unsubscribeFromEvents = useCallback((roomId: number) => {
+    const subscription = eventSubscriptionsRef.current.get(roomId);
+    if (subscription) {
+      subscription.unsubscribe();
+      eventSubscriptionsRef.current.delete(roomId);
+    }
+  }, []);
+
   const unsubscribe = useCallback((roomId: number) => {
     const subscription = subscriptionsRef.current.get(roomId);
     if (subscription) {
@@ -130,6 +184,10 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     });
   }, []);
 
+  const subscribeToErrors = useCallback((callback: (message: string) => void) => {
+    errorCallbackRef.current = callback;
+  }, []);
+
   const markAsRead = useCallback((request: ChatReadRequest) => {
     const client = clientRef.current;
     if (!client || !client.connected) {
@@ -147,8 +205,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     isConnected,
     subscribe,
     unsubscribe,
+    subscribeToEvents,
+    unsubscribeFromEvents,
     sendMessage,
     markAsRead,
+    subscribeToErrors,
   };
 
   return (

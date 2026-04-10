@@ -1,4 +1,5 @@
-export type MessageType = 'MESSAGE' | 'TRANSLATED' | 'READ';
+export type ChatMessageType = 'TRANSLATED';
+export type ChatEventType = 'READ' | 'ROOM_CLOSED';
 
 export interface ChatMessage {
   id: string;
@@ -8,8 +9,14 @@ export interface ChatMessage {
   translatedContent: string | null;
   createdAt: string;
   readAt: string | null;
-  type?: MessageType;
+  type?: ChatMessageType;
   messageId?: string;
+}
+
+export interface ChatEvent {
+  type: ChatEventType;
+  roomId: number;
+  senderId: number;
 }
 
 export interface SendMessageRequest {

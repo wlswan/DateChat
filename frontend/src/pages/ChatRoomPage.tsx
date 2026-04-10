@@ -15,7 +15,7 @@ export function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isConnected, subscribe, unsubscribe, sendMessage, markAsRead } = useWebSocket();
+  const { isConnected, subscribe, unsubscribe, subscribeToEvents, unsubscribeFromEvents, sendMessage, markAsRead, subscribeToErrors } = useWebSocket();
 
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [partner, setPartner] = useState<MatchDetailResponse | null>(null);
@@ -24,6 +24,10 @@ export function ChatRoomPage() {
   const [error, setError] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [isClosed, setIsClosed] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [toast, setToast] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -39,7 +43,6 @@ export function ChatRoomPage() {
 
   const handleNewMessage = useCallback((message: ChatMessageType) => {
     if (message.type === 'TRANSLATED' && message.messageId) {
-      // 번역 결과: 기존 메시지 업데이트
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === message.messageId
@@ -47,8 +50,24 @@ export function ChatRoomPage() {
             : msg
         )
       );
-    } else if (message.type === 'READ') {
-      // 읽음 알림: 내가 보낸 메시지들 읽음 처리
+    } else {
+      setMessages((prev) => [...prev, message]);
+      if (message.senderId !== user?.id && roomIdNum) {
+        markAsRead({ roomId: roomIdNum });
+      }
+    }
+  }, [user?.id, roomIdNum, markAsRead]);
+
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(''), 3000);
+  }, []);
+
+  const handleRoomEvent = useCallback((event: import('../types/chat.types').ChatEvent) => {
+    if (event.type === 'ROOM_CLOSED') {
+      setIsClosed(true);
+      showToast('상대방이 채팅방을 나갔습니다. 더 이상 메시지를 보낼 수 없습니다.');
+    } else if (event.type === 'READ') {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.senderId === user?.id && !msg.readAt
@@ -56,16 +75,8 @@ export function ChatRoomPage() {
             : msg
         )
       );
-    } else {
-      // 일반 메시지: 새로 추가
-      setMessages((prev) => [...prev, message]);
-
-      // 상대방 메시지일 경우 읽음 처리
-      if (message.senderId !== user?.id && roomIdNum) {
-        markAsRead({ roomId: roomIdNum });
-      }
     }
-  }, [user?.id, roomIdNum, markAsRead]);
+  }, [user?.id, showToast]);
 
   // 과거 메시지 로드 (위로 스크롤)
   const loadMoreMessages = useCallback(async () => {
@@ -136,22 +147,44 @@ export function ChatRoomPage() {
   }, [roomIdNum, navigate]);
 
   useEffect(() => {
-    if (isConnected && roomIdNum && user) {
+    if (isConnected && roomIdNum && user && !isClosed) {
       subscribe(roomIdNum, handleNewMessage);
-      // 채팅방 입장 시 읽음 처리
+      subscribeToEvents(roomIdNum, handleRoomEvent);
       markAsRead({ roomId: roomIdNum });
       return () => {
         unsubscribe(roomIdNum);
+        unsubscribeFromEvents(roomIdNum);
       };
     }
-  }, [isConnected, roomIdNum, user, subscribe, unsubscribe, handleNewMessage, markAsRead]);
+  }, [isConnected, roomIdNum, user, isClosed, subscribe, unsubscribe, subscribeToEvents, unsubscribeFromEvents, handleNewMessage, handleRoomEvent, markAsRead]);
+
+  useEffect(() => {
+    subscribeToErrors((message) => {
+      if (message === '종료된 채팅방입니다.') {
+        setIsClosed(true);
+        showToast('메시지를 보낼 수 없습니다. 채팅방이 종료되었습니다.');
+      }
+    });
+  }, [subscribeToErrors, showToast]);
 
   const handleSendMessage = (content: string) => {
-    if (!roomIdNum || !user) return;
+    if (!roomIdNum || !user || isClosed) return;
     sendMessage({
       roomId: roomIdNum,
       content,
     });
+  };
+
+  const handleLeaveRoom = async () => {
+    if (!roomIdNum || isLeaving) return;
+    setIsLeaving(true);
+    try {
+      await chatroomApi.leaveRoom(roomIdNum);
+      navigate('/rooms');
+    } catch {
+      setIsLeaving(false);
+      setShowLeaveConfirm(false);
+    }
   };
 
   const getLanguageLabel = (lang: string) => {
@@ -173,6 +206,7 @@ export function ChatRoomPage() {
 
   return (
     <div className="chatroom-container">
+      {toast && <div className="toast-message">{toast}</div>}
       <header className="chatroom-header">
         <button className="back-button" onClick={() => navigate('/rooms')}>
           <svg
@@ -200,7 +234,34 @@ export function ChatRoomPage() {
             {isConnected ? (partner ? getLanguageLabel(partner.partnerLang) : '연결됨') : '연결 중...'}
           </span>
         </div>
+        {!isClosed && (
+          <button className="leave-button" onClick={() => setShowLeaveConfirm(true)}>
+            나가기
+          </button>
+        )}
       </header>
+
+      {isClosed && (
+        <div className="closed-room-banner">
+          채팅방이 종료되었습니다. 더 이상 메시지를 보낼 수 없습니다.
+        </div>
+      )}
+
+      {showLeaveConfirm && (
+        <div className="confirm-overlay">
+          <div className="confirm-modal">
+            <p>채팅방을 나가면 대화 내용이 더 이상 보이지 않습니다. 나가시겠습니까?</p>
+            <div className="confirm-buttons">
+              <button className="confirm-cancel" onClick={() => setShowLeaveConfirm(false)}>
+                취소
+              </button>
+              <button className="confirm-leave" onClick={handleLeaveRoom} disabled={isLeaving}>
+                {isLeaving ? '나가는 중...' : '나가기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div
         className="messages-container"
@@ -234,7 +295,7 @@ export function ChatRoomPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      <MessageInput onSend={handleSendMessage} disabled={!isConnected} />
+      <MessageInput onSend={handleSendMessage} disabled={!isConnected || isClosed} />
     </div>
   );
 }

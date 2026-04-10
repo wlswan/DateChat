@@ -5,8 +5,11 @@ import com.example.dateServer.auth.entity.User;
 import com.example.dateServer.auth.exception.UserNotFoundException;
 import com.example.dateServer.auth.repository.UserRepository;
 import com.example.dateServer.common.Lang;
+import com.example.dateServer.chat.entity.ChatRoom;
+import com.example.dateServer.chat.entity.ChatRoomStatus;
+import com.example.dateServer.chat.exception.ChatRoomNotFoundException;
+import com.example.dateServer.chat.repository.ChatRoomRepository;
 import com.example.dateServer.like.entity.Match;
-import com.example.dateServer.like.repository.MatchRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -28,7 +31,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
-    private final MatchRepository matchRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
     private static final String USER_ID_KEY = "userId";
     private static final String USER_LANG_KEY = "userLang";
@@ -102,7 +105,11 @@ public class StompChannelInterceptor implements ChannelInterceptor {
         Long roomId = getRoomId(destination);
         Long userId = getUserIdFromSession(accessor);
 
-        Match match = matchRepository.findByIdWithUsers(roomId).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅방입니다"));
+        ChatRoom chatRoom = chatRoomRepository.findByIdWithUsers(roomId).orElseThrow(() -> new ChatRoomNotFoundException(roomId));
+        if (chatRoom.getStatus() == ChatRoomStatus.CLOSED) {
+            throw new MessagingException("종료된 채팅방입니다.");
+        }
+        Match match = chatRoom.getMatch();
         Lang targetLang = match.getUser1().getId().equals(userId) ? match.getUser2().getLang() : match.getUser1().getLang();
 
         Map<String, Object> sessionAttributes = accessor.getSessionAttributes();

@@ -6,10 +6,15 @@ import com.example.dateServer.chat.dto.ChatMessageRequest;
 import com.example.dateServer.chat.dto.ChatMessageResponse;
 import com.example.dateServer.chat.dto.ChatRoomResponse;
 import com.example.dateServer.chat.entity.ChatMessage;
+import com.example.dateServer.chat.entity.ChatRoom;
+import com.example.dateServer.chat.entity.ChatRoomStatus;
+import com.example.dateServer.chat.exception.ChatRoomAccessDeniedException;
+import com.example.dateServer.chat.exception.ChatRoomClosedException;
+import com.example.dateServer.chat.exception.ChatRoomNotFoundException;
 import com.example.dateServer.chat.repository.ChatMessageRepository;
+import com.example.dateServer.chat.repository.ChatRoomRepository;
 import com.example.dateServer.common.Lang;
 import com.example.dateServer.like.entity.Match;
-import com.example.dateServer.like.repository.MatchRepository;
 import com.example.dateServer.translation.TranslationRequestPublisher;
 import com.example.dateServer.translation.dto.TranslationRequest;
 import com.example.dateServer.translation.embedding.TranslationService;
@@ -34,12 +39,18 @@ import java.util.stream.Collectors;
 public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
-    private final MatchRepository matchRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final TranslationRequestPublisher translationRequestPublisher;
     private final TranslationService translationService;
     private final SimpMessagingTemplate messagingTemplate;
 
     public ChatMessage saveMessage(ChatMessageRequest request) {
+        ChatRoom chatRoom = chatRoomRepository.findById(request.getRoomId())
+                .orElseThrow(() -> new ChatRoomNotFoundException(request.getRoomId()));
+        if (chatRoom.getStatus() == ChatRoomStatus.CLOSED) {
+            throw new ChatRoomClosedException();
+        }
+
         ChatMessage message = ChatMessage.builder()
                 .roomId(request.getRoomId())
                 .senderId(request.getSenderId())
@@ -63,9 +74,10 @@ public class ChatService {
     public ChatMessagePageResponse getMessagesByRoomIdWithCursor(
             Long userId, Long roomId, LocalDateTime cursor, int size) {
 
-        Match match = matchRepository.findById(roomId).orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
+        ChatRoom chatRoom = chatRoomRepository.findByIdWithUsers(roomId).orElseThrow(() -> new ChatRoomNotFoundException(roomId));
+        Match match = chatRoom.getMatch();
         if(!match.getUser1().getId().equals(userId) && !match.getUser2().getId().equals(userId)){
-            throw new IllegalArgumentException("접근 권한 없음");
+            throw new ChatRoomAccessDeniedException();
         }
         Pageable pageable = PageRequest.of(0,size+1);
         List<ChatMessage> messages;
@@ -145,17 +157,28 @@ public class ChatService {
         translationRequestPublisher.publish(request);
     }
 
-        public List<ChatRoomResponse> getChatRooms(Long userId) {
-        List<Match> matches = matchRepository.findMatchesWithUsersByUserId(userId);
+    @Transactional
+    public void leaveRoom(Long userId, Long roomId) {
+        ChatRoom chatRoom = chatRoomRepository.findByIdWithUsers(roomId).orElseThrow(() -> new ChatRoomNotFoundException(roomId));
+        Match match = chatRoom.getMatch();
+        if (!match.getUser1().getId().equals(userId) && !match.getUser2().getId().equals(userId)) {
+            throw new ChatRoomAccessDeniedException();
+        }
+        chatRoom.close();
+    }
 
-        return matches.stream()
-                .map(match -> {
+        public List<ChatRoomResponse> getChatRooms(Long userId) {
+        List<ChatRoom> chatRooms = chatRoomRepository.findRoomsWithMatchAndUsersByUserId(userId);
+
+        return chatRooms.stream()
+                .map(chatRoom -> {
+                    Match match = chatRoom.getMatch();
                     User partner = match.getUser1().getId().equals(userId)
                             ? match.getUser2()
                             : match.getUser1();
 
                     return ChatRoomResponse.builder()
-                            .roomId(match.getId())
+                            .roomId(chatRoom.getId())
                             .partnerId(partner.getId())
                             .partnerNickname(partner.getNickname())
                             .build();

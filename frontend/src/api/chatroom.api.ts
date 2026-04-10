@@ -28,7 +28,7 @@ export const chatroomApi = {
 
   // TODO: Backend endpoint not implemented yet
   leaveRoom: async (roomId: number): Promise<void> => {
-    await apiClient.delete(`/api/chat/rooms/${roomId}`);
+    await apiClient.delete(`/api/chat/${roomId}`);
   },
 
   // 기존 API (하위 호환)

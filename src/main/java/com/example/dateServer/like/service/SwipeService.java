@@ -5,6 +5,8 @@ import com.example.dateServer.auth.entity.UserPreference;
 import com.example.dateServer.auth.exception.UserNotFoundException;
 import com.example.dateServer.auth.repository.UserPreferenceRepository;
 import com.example.dateServer.auth.repository.UserRepository;
+import com.example.dateServer.chat.entity.ChatRoom;
+import com.example.dateServer.chat.repository.ChatRoomRepository;
 import com.example.dateServer.like.dto.*;
 import com.example.dateServer.like.entity.Match;
 import com.example.dateServer.like.entity.Swipe;
@@ -25,6 +27,7 @@ public class SwipeService {
     private final SwipeRepository swipeRepository;
     private final UserRepository userRepository;
     private final MatchRepository matchRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final UserPreferenceRepository userPreferenceRepository;
 
     @Transactional(readOnly = true)
@@ -75,11 +78,17 @@ public class SwipeService {
                     .user2(user2)
                     .build();
             Match savedMatch = matchRepository.save(match);
-            return new SwipeResult(true, savedMatch.getId());
+
+            ChatRoom chatRoom = ChatRoom.builder()
+                    .match(savedMatch)
+                    .build();
+            ChatRoom savedRoom = chatRoomRepository.save(chatRoom);
+
+            return new SwipeResult(true, savedRoom.getId());
         } catch (DataIntegrityViolationException e) {
-            Match existingMatch = matchRepository.findByUserIds(fromUser.getId(), toUser.getId())
-                    .orElseThrow(() -> new IllegalStateException("매칭 생성 중 오류 발생"));
-            return new SwipeResult(true, existingMatch.getId());
+            ChatRoom existingRoom = chatRoomRepository.findByUserIds(fromUser.getId(), toUser.getId())
+                    .orElseThrow(() -> new IllegalStateException("채팅방 생성 중 오류 발생"));
+            return new SwipeResult(true, existingRoom.getId());
         }
     }
 
@@ -98,6 +107,9 @@ public class SwipeService {
 
     public MatchDetailResponse getMatchDetail(Long userId, Long matchId) {
         Match match = matchRepository.findByIdWithUsers(matchId).orElseThrow(() -> new IllegalArgumentException("매칭이 없습니다."));
+        if (!userId.equals(match.getUser1().getId()) && !userId.equals(match.getUser2().getId())) {
+            throw new IllegalArgumentException("접근 권한 없음");
+        }
         User partnerUser = userId.equals(match.getUser1().getId()) ? match.getUser2() : match.getUser1();
         return MatchDetailResponse.from(partnerUser, match);
     }
