@@ -97,7 +97,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
     private void handleSubscribe(StompHeaderAccessor accessor) {
         String destination = accessor.getDestination();
 
-        if (destination == null || !destination.startsWith("/topic/chat/")) {
+        if (destination == null || !destination.matches("/topic/chat/\\d+")) {
             return;
         }
 

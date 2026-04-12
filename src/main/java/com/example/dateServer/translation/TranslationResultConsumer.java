@@ -2,14 +2,13 @@ package com.example.dateServer.translation;
 
 import com.example.dateServer.chat.entity.ChatMessage;
 import com.example.dateServer.chat.repository.ChatMessageRepository;
-import com.example.dateServer.chat.dto.ChatMessageRequest;
-import com.example.dateServer.chat.MessageType;
+import com.example.dateServer.chat.dto.ChatMessageResponse;
+import com.example.dateServer.chat.service.ChatPublisher;
 import com.example.dateServer.config.RabbitMQConfig;
 import com.example.dateServer.translation.dto.TranslationResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -18,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class TranslationResultConsumer {
 
     private final ChatMessageRepository chatMessageRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatPublisher chatPublisher;
 
     @RabbitListener(queues = RabbitMQConfig.TRANSLATION_RESULT_QUEUE)
     public void consume(TranslationResult result) {
@@ -26,6 +25,7 @@ public class TranslationResultConsumer {
 
         if (!result.isSuccess()) {
             log.error("번역 실패 - 메시지 ID: {}, 방 ID : {}, 에러 내용: {}", result.getMessageId(),result.getRoomId(), result.getErrorMessage());
+            chatPublisher.publish("/topic/chat/" + result.getRoomId(), ChatMessageResponse.translationFailed(result.getRoomId(), result.getSenderId(), result.getMessageId()));
             return;
         }
 
@@ -38,14 +38,7 @@ public class TranslationResultConsumer {
         message.updateTranslation(result.getTranslatedContent());
         chatMessageRepository.save(message);
 
-        ChatMessageRequest notification = new ChatMessageRequest();
-        notification.setType(MessageType.TRANSLATED);
-        notification.setRoomId(result.getRoomId());
-        notification.setSenderId(result.getSenderId());
-        notification.setContent(result.getTranslatedContent());
-        notification.setMessageId(result.getMessageId());
-
-        messagingTemplate.convertAndSend("/topic/chat/" + result.getRoomId(), notification);
+        chatPublisher.publish("/topic/chat/" + result.getRoomId(), ChatMessageResponse.translated(result.getRoomId(), result.getSenderId(), result.getMessageId(), result.getTranslatedContent()));
 
         log.info("번역 처리 및 브로드캐스팅 완료 - 메시지 ID: {}, 채팅방: {}", result.getMessageId(), result.getRoomId());
     }

@@ -1,5 +1,6 @@
 package com.example.dateServer.chat.dto;
 
+import com.example.dateServer.chat.MessageType;
 import com.example.dateServer.chat.entity.ChatMessage;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,6 +17,8 @@ public class ChatMessageResponse {
     private String translatedContent;
     private LocalDateTime createdAt;
     private LocalDateTime readAt;
+    private MessageType type;
+    private String messageId;
 
     public static ChatMessageResponse from(ChatMessage entity) {
         return ChatMessageResponse.builder()
@@ -26,6 +29,25 @@ public class ChatMessageResponse {
                 .translatedContent(entity.getTranslatedContent())
                 .createdAt(entity.getCreatedAt())
                 .readAt(entity.getReadAt())
+                .build();
+    }
+
+    public static ChatMessageResponse translated(Long roomId, Long senderId, String messageId, String translatedContent) {
+        return ChatMessageResponse.builder()
+                .roomId(roomId)
+                .senderId(senderId)
+                .messageId(messageId)
+                .content(translatedContent)
+                .type(MessageType.TRANSLATED)
+                .build();
+    }
+
+    public static ChatMessageResponse translationFailed(Long roomId, Long senderId, String messageId) {
+        return ChatMessageResponse.builder()
+                .roomId(roomId)
+                .senderId(senderId)
+                .messageId(messageId)
+                .type(MessageType.TRANSLATION_FAILED)
                 .build();
     }
 }

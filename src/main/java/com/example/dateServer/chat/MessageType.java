@@ -1,5 +1,5 @@
 package com.example.dateServer.chat;
 
 public enum MessageType {
-    TRANSLATED;
+    TRANSLATED, TRANSLATION_FAILED;
 }

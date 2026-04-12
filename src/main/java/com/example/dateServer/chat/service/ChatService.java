@@ -2,7 +2,6 @@ package com.example.dateServer.chat.service;
 
 import com.example.dateServer.auth.entity.User;
 import com.example.dateServer.chat.dto.ChatMessagePageResponse;
-import com.example.dateServer.chat.dto.ChatMessageRequest;
 import com.example.dateServer.chat.dto.ChatMessageResponse;
 import com.example.dateServer.chat.dto.ChatRoomResponse;
 import com.example.dateServer.chat.entity.ChatMessage;
@@ -21,7 +20,6 @@ import com.example.dateServer.translation.embedding.TranslationService;
 import com.example.dateServer.chat.MessageType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -42,19 +40,19 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final TranslationRequestPublisher translationRequestPublisher;
     private final TranslationService translationService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatPublisher chatPublisher;
 
-    public ChatMessage saveMessage(ChatMessageRequest request) {
-        ChatRoom chatRoom = chatRoomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new ChatRoomNotFoundException(request.getRoomId()));
+    public ChatMessage saveMessage(Long roomId, Long senderId, String content) {
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new ChatRoomNotFoundException(roomId));
         if (chatRoom.getStatus() == ChatRoomStatus.CLOSED) {
             throw new ChatRoomClosedException();
         }
 
         ChatMessage message = ChatMessage.builder()
-                .roomId(request.getRoomId())
-                .senderId(request.getSenderId())
-                .content(request.getContent())
+                .roomId(roomId)
+                .senderId(senderId)
+                .content(content)
                 .build();
         return chatMessageRepository.save(message);
     }
@@ -115,8 +113,11 @@ public class ChatService {
         chatMessageRepository.saveAll(unReadMessages);
     }
 
-    @Transactional
     public void requestTranslation(String messageId, Long roomId, Long senderId, String content,Lang sourceLang, Lang targetLang) {
+        if (sourceLang == null || targetLang == null) {
+            log.warn("언어 정보 없음 - 번역 스킵: {}", messageId);
+            return;
+        }
         if (sourceLang == targetLang) {
             log.debug("같은 언어로 번역 시도: {}", messageId);
             return;
@@ -133,14 +134,7 @@ public class ChatService {
                 chatMessageRepository.save(message);
             }
 
-            ChatMessageRequest notification = new ChatMessageRequest();
-            notification.setType(MessageType.TRANSLATED);
-            notification.setRoomId(roomId);
-            notification.setSenderId(senderId);
-            notification.setContent(translated);
-            notification.setMessageId(messageId);
-
-            messagingTemplate.convertAndSend("/topic/chat/" + roomId, notification);
+            chatPublisher.publish("/topic/chat/" + roomId, ChatMessageResponse.translated(roomId, senderId, messageId, translated));
             log.info("캐시 히트로 즉시 번역 완료: {}", messageId);
             return;
         }
@@ -154,7 +148,12 @@ public class ChatService {
                 .targetLang(targetLang)
                 .build();
 
-        translationRequestPublisher.publish(request);
+        try {
+            translationRequestPublisher.publish(request);
+        } catch (Exception e) {
+            log.error("번역 요청 발행 실패 - 메시지 ID: {}", messageId, e);
+            chatPublisher.publish("/topic/chat/" + roomId, ChatMessageResponse.translationFailed(roomId, senderId, messageId));
+        }
     }
 
     @Transactional

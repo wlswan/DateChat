@@ -1,9 +1,9 @@
 package com.example.dateServer.chat.service;
 
-import com.example.dateServer.chat.dto.ChatMessageResponse;
-import com.example.dateServer.chat.entity.ChatMessage;
+import com.example.dateServer.chat.dto.RedisPublishPayload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RedisSubscriber implements MessageListener {
@@ -22,13 +23,14 @@ public class RedisSubscriber implements MessageListener {
     @Override
     public void onMessage(Message message, byte @Nullable [] pattern) {
         try {
-            ChatMessage chatMessage = objectMapper.readValue(message.getBody(), ChatMessage.class);
-            ChatMessageResponse response = ChatMessageResponse.from(chatMessage);
-            simpMessagingTemplate.convertAndSend(
-                    "/topic/chat/" + response.getRoomId(), response
-            );
+            RedisPublishPayload payload = objectMapper.readValue(message.getBody(), RedisPublishPayload.class);
+            log.info("Redis 수신 - destination: {}", payload.getDestination());
+            simpMessagingTemplate.convertAndSend(payload.getDestination(), payload.getData());
+            log.info("WebSocket 전송 완료 - destination: {}", payload.getDestination());
         } catch (IOException e) {
+            log.error("Redis 메시지 처리 실패", e);
             throw new RuntimeException(e);
         }
     }
 }
+
