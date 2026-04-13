@@ -3,6 +3,7 @@ package com.example.dateServer.chat.controller;
 import com.example.dateServer.chat.*;
 import com.example.dateServer.chat.dto.ChatErrorResponse;
 import com.example.dateServer.chat.dto.ChatEventBroadcast;
+import com.example.dateServer.chat.dto.ChatRetryTranslationRequest;
 import com.example.dateServer.chat.exception.ChatRoomClosedException;
 import com.example.dateServer.chat.dto.ChatReadRequest;
 import com.example.dateServer.chat.dto.ChatMessageResponse;
@@ -48,6 +49,18 @@ public class ChattingController {
                 userLang,
                 targetLang
         );
+    }
+
+    @MessageMapping("/chat.retryTranslation")
+    public void retryTranslation(ChatRetryTranslationRequest request, SimpMessageHeaderAccessor accessor) {
+        Long userId = StompChannelInterceptor.getUserId(accessor);
+        if (userId == null) {
+            log.warn("인증되지 않은 사용자의 번역 재시도 시도");
+            return;
+        }
+        Lang userLang = StompChannelInterceptor.getUserLang(accessor);
+        Lang targetLang = StompChannelInterceptor.getTargetLang(accessor, request.getRoomId());
+        chatService.retryTranslation(request.getMessageId(), request.getRoomId(), userId, request.getContent(), userLang, targetLang);
     }
 
     @MessageExceptionHandler(ChatRoomClosedException.class)

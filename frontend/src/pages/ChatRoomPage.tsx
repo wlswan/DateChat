@@ -15,7 +15,7 @@ export function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isConnected, subscribe, unsubscribe, subscribeToEvents, unsubscribeFromEvents, sendMessage, markAsRead, subscribeToErrors } = useWebSocket();
+  const { isConnected, subscribe, unsubscribe, subscribeToEvents, unsubscribeFromEvents, sendMessage, retryTranslation, markAsRead, subscribeToErrors } = useWebSocket();
 
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [partner, setPartner] = useState<MatchDetailResponse | null>(null);
@@ -32,10 +32,41 @@ export function ChatRoomPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const roomIdNum = roomId ? parseInt(roomId, 10) : 0;
+  const pendingTempIdsRef = useRef<Map<string, string>>(new Map()); // tempId -> content
+  const pendingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map()); // tempId -> timer
+  const hasConnectedRef = useRef(false); // 재연결 감지용
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // 서버에서 받은 translationStatus → 프론트 UI 상태로 변환
+  const normalizeMessage = (msg: import('../types/chat.types').ChatMessage) => ({
+    ...msg,
+    translationFailed: msg.translationStatus === 'FAILED',
+    translationPending: msg.translationStatus === 'PENDING',
+  });
+
+  // 재연결 시 최신 메시지를 가져와 기존 목록에 merge
+  const reloadRecentMessages = useCallback(async () => {
+    try {
+      const response = await chatroomApi.getMessagesWithCursor(roomIdNum);
+      const freshMessages = [...response.messages].reverse().map(normalizeMessage);
+      setMessages((prev) => {
+        const prevMap = new Map(prev.map((msg) => [msg.id, msg]));
+        freshMessages.forEach((fresh) => {
+          // 이미 있는 메시지는 번역 상태만 갱신, 없으면 신규 추가
+          const existing = prevMap.get(fresh.id);
+          prevMap.set(fresh.id, existing ? { ...existing, ...fresh } : fresh);
+        });
+        return Array.from(prevMap.values()).sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      });
+    } catch {
+      console.error('재연결 후 메시지 리로드 실패');
+    }
+  }, [roomIdNum]);
 
   useEffect(() => {
     scrollToBottom();
@@ -46,12 +77,48 @@ export function ChatRoomPage() {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === message.messageId
-            ? { ...msg, translatedContent: message.content }
+            ? { ...msg, translatedContent: message.content, translationFailed: false, translationPending: false }
+            : msg
+        )
+      );
+    } else if (message.type === 'TRANSLATION_PENDING' && message.messageId) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === message.messageId
+            ? { ...msg, translationPending: true, translationFailed: false }
+            : msg
+        )
+      );
+    } else if (message.type === 'TRANSLATION_FAILED' && message.messageId) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === message.messageId
+            ? { ...msg, translationFailed: true, translationPending: false }
             : msg
         )
       );
     } else {
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => {
+        // 내가 보낸 메시지가 서버에서 돌아오면 임시 메시지와 교체
+        if (message.senderId === user?.id) {
+          const tempIdx = prev.findIndex(
+            (msg) => msg.id.startsWith('temp-') && msg.content === message.content
+          );
+          if (tempIdx !== -1) {
+            const tempId = prev[tempIdx].id;
+            const timer = pendingTimersRef.current.get(tempId);
+            if (timer) {
+              clearTimeout(timer);
+              pendingTimersRef.current.delete(tempId);
+            }
+            pendingTempIdsRef.current.delete(tempId);
+            const updated = [...prev];
+            updated[tempIdx] = message;
+            return updated;
+          }
+        }
+        return [...prev, message];
+      });
       if (message.senderId !== user?.id && roomIdNum) {
         markAsRead({ roomId: roomIdNum });
       }
@@ -89,7 +156,7 @@ export function ChatRoomPage() {
     try {
       const response = await chatroomApi.getMessagesWithCursor(roomIdNum, nextCursor);
       // 과거 메시지를 앞에 붙임 (reverse해서 시간순으로)
-      const olderMessages = [...response.messages].reverse();
+      const olderMessages = [...response.messages].reverse().map(normalizeMessage);
       setMessages((prev) => [...olderMessages, ...prev]);
       setNextCursor(response.nextCursor);
       setHasMore(response.hasMore);
@@ -131,8 +198,8 @@ export function ChatRoomPage() {
           chatroomApi.getMessagesWithCursor(roomIdNum),
           matchingApi.getMatchDetail(roomIdNum),
         ]);
-        // DESC로 온 데이터를 reverse해서 시간순(ASC)으로
-        setMessages([...messagesResponse.messages].reverse());
+        // DESC로 온 데이터를 reverse해서 시간순(ASC)으로, translationStatus 반영
+        setMessages([...messagesResponse.messages].reverse().map(normalizeMessage));
         setNextCursor(messagesResponse.nextCursor);
         setHasMore(messagesResponse.hasMore);
         setPartner(partnerResponse);
@@ -148,6 +215,12 @@ export function ChatRoomPage() {
 
   useEffect(() => {
     if (isConnected && roomIdNum && user && !isClosed) {
+      // 재연결인 경우 그 사이 놓친 번역 결과 반영
+      if (hasConnectedRef.current) {
+        reloadRecentMessages();
+      }
+      hasConnectedRef.current = true;
+
       subscribe(roomIdNum, handleNewMessage);
       subscribeToEvents(roomIdNum, handleRoomEvent);
       markAsRead({ roomId: roomIdNum });
@@ -156,7 +229,7 @@ export function ChatRoomPage() {
         unsubscribeFromEvents(roomIdNum);
       };
     }
-  }, [isConnected, roomIdNum, user, isClosed, subscribe, unsubscribe, subscribeToEvents, unsubscribeFromEvents, handleNewMessage, handleRoomEvent, markAsRead]);
+  }, [isConnected, roomIdNum, user, isClosed, subscribe, unsubscribe, subscribeToEvents, unsubscribeFromEvents, handleNewMessage, handleRoomEvent, markAsRead, reloadRecentMessages]);
 
   useEffect(() => {
     subscribeToErrors((message) => {
@@ -169,10 +242,40 @@ export function ChatRoomPage() {
 
   const handleSendMessage = (content: string) => {
     if (!roomIdNum || !user || isClosed) return;
+
+    // 낙관적 업데이트: 서버 응답 전에 즉시 화면에 표시
+    const tempId = `temp-${Date.now()}`;
+    const tempMessage: ChatMessageType = {
+      id: tempId,
+      roomId: roomIdNum,
+      senderId: user.id,
+      content,
+      translatedContent: null,
+      createdAt: new Date().toISOString(),
+      readAt: null,
+    };
+    pendingTempIdsRef.current.set(tempId, content);
+    setMessages((prev) => [...prev, tempMessage]);
+
     sendMessage({
       roomId: roomIdNum,
       content,
     });
+
+    // 10초 안에 서버 echo가 없으면 전송 실패 처리
+    const timer = setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((msg) => msg.id === tempId ? { ...msg, sendFailed: true } : msg)
+      );
+      pendingTimersRef.current.delete(tempId);
+    }, 10000);
+    pendingTimersRef.current.set(tempId, timer);
+  };
+
+  const handleResendMessage = (tempId: string, content: string) => {
+    setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+    pendingTempIdsRef.current.delete(tempId);
+    handleSendMessage(content);
   };
 
   const handleLeaveRoom = async () => {
@@ -284,11 +387,24 @@ export function ChatRoomPage() {
             <p>먼저 인사를 건네보세요!</p>
           </div>
         ) : (
-          messages.map((message) => (
+          messages.map((message, index) => (
             <ChatMessage
-              key={message.id}
+              key={message.id ?? `msg-${index}`}
               message={message}
               isOwn={message.senderId === user?.id}
+              onResend={message.id.startsWith('temp-') && message.sendFailed
+                ? (tempId, content) => handleResendMessage(tempId, content)
+                : undefined}
+              onRetryTranslation={message.senderId === user?.id ? (messageId, content) => {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === messageId
+                      ? { ...msg, translationFailed: false, translationPending: true }
+                      : msg
+                  )
+                );
+                retryTranslation({ messageId, roomId: roomIdNum, content });
+              } : undefined}
             />
           ))
         )}

@@ -17,7 +17,7 @@ import com.example.dateServer.like.entity.Match;
 import com.example.dateServer.translation.TranslationRequestPublisher;
 import com.example.dateServer.translation.dto.TranslationRequest;
 import com.example.dateServer.translation.embedding.TranslationService;
-import com.example.dateServer.chat.MessageType;
+import com.example.dateServer.chat.TranslationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -113,7 +113,7 @@ public class ChatService {
         chatMessageRepository.saveAll(unReadMessages);
     }
 
-    public void requestTranslation(String messageId, Long roomId, Long senderId, String content,Lang sourceLang, Lang targetLang) {
+    public void requestTranslation(String messageId, Long roomId, Long senderId, String content, Lang sourceLang, Lang targetLang) {
         if (sourceLang == null || targetLang == null) {
             log.warn("언어 정보 없음 - 번역 스킵: {}", messageId);
             return;
@@ -127,17 +127,22 @@ public class ChatService {
 
         if (cached.isPresent()) {
             String translated = cached.get();
-
             ChatMessage message = chatMessageRepository.findById(messageId).orElse(null);
             if (message != null) {
-                message.updateTranslation(translated);
+                message.updateTranslationSuccess(translated); // SUCCESS 상태 포함
                 chatMessageRepository.save(message);
             }
-
             chatPublisher.publish("/topic/chat/" + roomId, ChatMessageResponse.translated(roomId, senderId, messageId, translated));
             log.info("캐시 히트로 즉시 번역 완료: {}", messageId);
             return;
         }
+
+        chatMessageRepository.findById(messageId).ifPresent(message -> {
+            message.updateTranslationStatus(TranslationStatus.PENDING);
+            chatMessageRepository.save(message);
+        });
+        chatPublisher.publish("/topic/chat/" + roomId,
+                ChatMessageResponse.translationPending(roomId, senderId, messageId));
 
         TranslationRequest request = TranslationRequest.builder()
                 .messageId(messageId)
@@ -152,8 +157,17 @@ public class ChatService {
             translationRequestPublisher.publish(request);
         } catch (Exception e) {
             log.error("번역 요청 발행 실패 - 메시지 ID: {}", messageId, e);
+            chatMessageRepository.findById(messageId).ifPresent(message -> {
+                message.updateTranslationStatus(TranslationStatus.FAILED);
+                chatMessageRepository.save(message);
+            });
             chatPublisher.publish("/topic/chat/" + roomId, ChatMessageResponse.translationFailed(roomId, senderId, messageId));
         }
+    }
+
+    public void retryTranslation(String messageId, Long roomId, Long senderId, String content, Lang sourceLang, Lang targetLang) {
+        log.info("번역 재시도 요청 - 메시지 ID: {}, {} → {}", messageId, sourceLang, targetLang);
+        requestTranslation(messageId, roomId, senderId, content, sourceLang, targetLang);
     }
 
     @Transactional

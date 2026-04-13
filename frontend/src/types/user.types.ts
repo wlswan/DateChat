@@ -1,1 +1,1 @@
-export type { Lang, ProfileResponse } from './auth.types';
+export type { AppLang, ProfileResponse } from './auth.types';

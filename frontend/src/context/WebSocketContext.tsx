@@ -11,7 +11,7 @@ import { Client, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { storage } from '../utils/storage';
 import { useAuth } from '../hooks/useAuth';
-import type { ChatMessage, ChatEvent, SendMessageRequest, ChatReadRequest } from '../types/chat.types';
+import type { ChatMessage, ChatEvent, SendMessageRequest, ChatReadRequest, RetryTranslationRequest } from '../types/chat.types';
 
 interface WebSocketContextType {
   isConnected: boolean;
@@ -20,6 +20,7 @@ interface WebSocketContextType {
   subscribeToEvents: (roomId: number, callback: (event: ChatEvent) => void) => void;
   unsubscribeFromEvents: (roomId: number) => void;
   sendMessage: (request: SendMessageRequest) => void;
+  retryTranslation: (request: RetryTranslationRequest) => void;
   markAsRead: (request: ChatReadRequest) => void;
   subscribeToErrors: (callback: (message: string) => void) => void;
 }
@@ -184,6 +185,19 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     });
   }, []);
 
+  const retryTranslation = useCallback((request: RetryTranslationRequest) => {
+    const client = clientRef.current;
+    if (!client || !client.connected) {
+      console.warn('WebSocket not connected, cannot retry translation');
+      return;
+    }
+
+    client.publish({
+      destination: '/app/chat.retryTranslation',
+      body: JSON.stringify(request),
+    });
+  }, []);
+
   const subscribeToErrors = useCallback((callback: (message: string) => void) => {
     errorCallbackRef.current = callback;
   }, []);
@@ -208,6 +222,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     subscribeToEvents,
     unsubscribeFromEvents,
     sendMessage,
+    retryTranslation,
     markAsRead,
     subscribeToErrors,
   };

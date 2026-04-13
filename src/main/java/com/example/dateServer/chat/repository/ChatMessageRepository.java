@@ -1,5 +1,6 @@
 package com.example.dateServer.chat.repository;
 
+import com.example.dateServer.chat.TranslationStatus;
 import com.example.dateServer.chat.entity.ChatMessage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -25,4 +26,8 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage,Strin
     // 커서 이후 메시지 (새 메시지 로드)
     List<ChatMessage> findByRoomIdAndCreatedAtAfterOrderByCreatedAtAsc(
             Long roomId, LocalDateTime cursor, Pageable pageable);
+
+    // 타임아웃 처리용: 특정 시간 이전에 생성된 PENDING 메시지 조회
+    List<ChatMessage> findByTranslationStatusAndCreatedAtBefore(
+            TranslationStatus translationStatus, LocalDateTime threshold);
 }

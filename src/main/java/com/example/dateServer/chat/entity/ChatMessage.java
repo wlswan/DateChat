@@ -1,5 +1,6 @@
 package com.example.dateServer.chat.entity;
 
+import com.example.dateServer.chat.TranslationStatus;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,6 +32,8 @@ public class ChatMessage {
 
     private String translatedContent;
 
+    private TranslationStatus translationStatus = TranslationStatus.NONE;
+
     @CreatedDate
     private LocalDateTime createdAt;
 
@@ -41,13 +44,19 @@ public class ChatMessage {
         this.roomId = roomId;
         this.senderId = senderId;
         this.content = content;
+        this.translationStatus = TranslationStatus.NONE;
     }
 
     public void markAsRead() {
         this.readAt = LocalDateTime.now();
     }
 
-    public void updateTranslation(String translatedContent) {
+    public void updateTranslationSuccess(String translatedContent) {
         this.translatedContent = translatedContent;
+        this.translationStatus = TranslationStatus.SUCCESS;
+    }
+
+    public void updateTranslationStatus(TranslationStatus status) {
+        this.translationStatus = status;
     }
 }

@@ -1,6 +1,7 @@
 package com.example.dateServer.chat.dto;
 
 import com.example.dateServer.chat.MessageType;
+import com.example.dateServer.chat.TranslationStatus;
 import com.example.dateServer.chat.entity.ChatMessage;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +16,7 @@ public class ChatMessageResponse {
     private Long senderId;
     private String content;
     private String translatedContent;
+    private TranslationStatus translationStatus;
     private LocalDateTime createdAt;
     private LocalDateTime readAt;
     private MessageType type;
@@ -27,6 +29,7 @@ public class ChatMessageResponse {
                 .senderId(entity.getSenderId())
                 .content(entity.getContent())
                 .translatedContent(entity.getTranslatedContent())
+                .translationStatus(entity.getTranslationStatus())
                 .createdAt(entity.getCreatedAt())
                 .readAt(entity.getReadAt())
                 .build();
@@ -39,6 +42,15 @@ public class ChatMessageResponse {
                 .messageId(messageId)
                 .content(translatedContent)
                 .type(MessageType.TRANSLATED)
+                .build();
+    }
+
+    public static ChatMessageResponse translationPending(Long roomId, Long senderId, String messageId) {
+        return ChatMessageResponse.builder()
+                .roomId(roomId)
+                .senderId(senderId)
+                .messageId(messageId)
+                .type(MessageType.TRANSLATION_PENDING)
                 .build();
     }
 
