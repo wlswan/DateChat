@@ -53,11 +53,11 @@ export function ChatRoomPage() {
       const response = await chatroomApi.getMessagesWithCursor(roomIdNum);
       const freshMessages = [...response.messages].reverse().map(normalizeMessage);
       setMessages((prev) => {
-        const prevMap = new Map(prev.map((msg) => [msg.id, msg]));
+        const prevMap = new Map(prev.map((msg) => [msg.messageId, msg]));
         freshMessages.forEach((fresh) => {
           // 이미 있는 메시지는 번역 상태만 갱신, 없으면 신규 추가
-          const existing = prevMap.get(fresh.id);
-          prevMap.set(fresh.id, existing ? { ...existing, ...fresh } : fresh);
+          const existing = prevMap.get(fresh.messageId);
+          prevMap.set(fresh.messageId, existing ? { ...existing, ...fresh } : fresh);
         });
         return Array.from(prevMap.values()).sort(
           (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -76,7 +76,7 @@ export function ChatRoomPage() {
     if (message.type === 'TRANSLATED' && message.messageId) {
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === message.messageId
+          msg.messageId === message.messageId
             ? { ...msg, translatedContent: message.content, translationFailed: false, translationPending: false }
             : msg
         )
@@ -84,7 +84,7 @@ export function ChatRoomPage() {
     } else if (message.type === 'TRANSLATION_PENDING' && message.messageId) {
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === message.messageId
+          msg.messageId === message.messageId
             ? { ...msg, translationPending: true, translationFailed: false }
             : msg
         )
@@ -92,7 +92,7 @@ export function ChatRoomPage() {
     } else if (message.type === 'TRANSLATION_FAILED' && message.messageId) {
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === message.messageId
+          msg.messageId === message.messageId
             ? { ...msg, translationFailed: true, translationPending: false }
             : msg
         )
@@ -102,10 +102,10 @@ export function ChatRoomPage() {
         // 내가 보낸 메시지가 서버에서 돌아오면 임시 메시지와 교체
         if (message.senderId === user?.id) {
           const tempIdx = prev.findIndex(
-            (msg) => msg.id.startsWith('temp-') && msg.content === message.content
+            (msg) => msg.messageId.startsWith('temp-') && msg.content === message.content
           );
           if (tempIdx !== -1) {
-            const tempId = prev[tempIdx].id;
+            const tempId = prev[tempIdx].messageId;
             const timer = pendingTimersRef.current.get(tempId);
             if (timer) {
               clearTimeout(timer);
@@ -246,7 +246,7 @@ export function ChatRoomPage() {
     // 낙관적 업데이트: 서버 응답 전에 즉시 화면에 표시
     const tempId = `temp-${Date.now()}`;
     const tempMessage: ChatMessageType = {
-      id: tempId,
+      messageId: tempId,
       roomId: roomIdNum,
       senderId: user.id,
       content,
@@ -265,7 +265,7 @@ export function ChatRoomPage() {
     // 10초 안에 서버 echo가 없으면 전송 실패 처리
     const timer = setTimeout(() => {
       setMessages((prev) =>
-        prev.map((msg) => msg.id === tempId ? { ...msg, sendFailed: true } : msg)
+        prev.map((msg) => msg.messageId === tempId ? { ...msg, sendFailed: true } : msg)
       );
       pendingTimersRef.current.delete(tempId);
     }, 10000);
@@ -273,7 +273,7 @@ export function ChatRoomPage() {
   };
 
   const handleResendMessage = (tempId: string, content: string) => {
-    setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+    setMessages((prev) => prev.filter((msg) => msg.messageId !== tempId));
     pendingTempIdsRef.current.delete(tempId);
     handleSendMessage(content);
   };
@@ -389,16 +389,16 @@ export function ChatRoomPage() {
         ) : (
           messages.map((message, index) => (
             <ChatMessage
-              key={message.id ?? `msg-${index}`}
+              key={message.messageId ?? `msg-${index}`}
               message={message}
               isOwn={message.senderId === user?.id}
-              onResend={message.id.startsWith('temp-') && message.sendFailed
+              onResend={message.messageId.startsWith('temp-') && message.sendFailed
                 ? (tempId, content) => handleResendMessage(tempId, content)
                 : undefined}
               onRetryTranslation={message.senderId === user?.id ? (messageId, content) => {
                 setMessages((prev) =>
                   prev.map((msg) =>
-                    msg.id === messageId
+                    msg.messageId === messageId
                       ? { ...msg, translationFailed: false, translationPending: true }
                       : msg
                   )

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class ChatMessageResponse {
-    private String id;
+    private String messageId;
     private Long roomId;
     private Long senderId;
     private String content;
@@ -20,11 +20,10 @@ public class ChatMessageResponse {
     private LocalDateTime createdAt;
     private LocalDateTime readAt;
     private MessageType type;
-    private String messageId;
 
     public static ChatMessageResponse from(ChatMessage entity) {
         return ChatMessageResponse.builder()
-                .id(entity.getId())
+                .messageId(entity.getId())
                 .roomId(entity.getRoomId())
                 .senderId(entity.getSenderId())
                 .content(entity.getContent())
@@ -37,9 +36,9 @@ public class ChatMessageResponse {
 
     public static ChatMessageResponse translated(Long roomId, Long senderId, String messageId, String translatedContent) {
         return ChatMessageResponse.builder()
+                .messageId(messageId)
                 .roomId(roomId)
                 .senderId(senderId)
-                .messageId(messageId)
                 .content(translatedContent)
                 .type(MessageType.TRANSLATED)
                 .build();
@@ -47,18 +46,18 @@ public class ChatMessageResponse {
 
     public static ChatMessageResponse translationPending(Long roomId, Long senderId, String messageId) {
         return ChatMessageResponse.builder()
+                .messageId(messageId)
                 .roomId(roomId)
                 .senderId(senderId)
-                .messageId(messageId)
                 .type(MessageType.TRANSLATION_PENDING)
                 .build();
     }
 
     public static ChatMessageResponse translationFailed(Long roomId, Long senderId, String messageId) {
         return ChatMessageResponse.builder()
+                .messageId(messageId)
                 .roomId(roomId)
                 .senderId(senderId)
-                .messageId(messageId)
                 .type(MessageType.TRANSLATION_FAILED)
                 .build();
     }

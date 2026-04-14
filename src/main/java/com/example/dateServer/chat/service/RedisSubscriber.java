@@ -25,7 +25,8 @@ public class RedisSubscriber implements MessageListener {
         try {
             RedisPublishPayload payload = objectMapper.readValue(message.getBody(), RedisPublishPayload.class);
             log.info("Redis 수신 - destination: {}", payload.getDestination());
-            simpMessagingTemplate.convertAndSend(payload.getDestination(), payload.getData());
+            String dataJson = objectMapper.writeValueAsString(payload.getData());
+            simpMessagingTemplate.convertAndSend(payload.getDestination(), dataJson);
             log.info("WebSocket 전송 완료 - destination: {}", payload.getDestination());
         } catch (IOException e) {
             log.error("Redis 메시지 처리 실패", e);

@@ -40,7 +40,7 @@ export function ChatMessage({ message, isOwn, onRetryTranslation, onResend }: Ch
             {onRetryTranslation && (
               <button
                 className="retry-button"
-                onClick={() => onRetryTranslation(message.id, message.content)}
+                onClick={() => onRetryTranslation(message.messageId, message.content)}
               >
                 다시 시도
               </button>
@@ -53,7 +53,7 @@ export function ChatMessage({ message, isOwn, onRetryTranslation, onResend }: Ch
           <span>전송 실패</span>
           <button
             className="resend-button"
-            onClick={() => onResend(message.id, message.content)}
+            onClick={() => onResend(message.messageId, message.content)}
           >
             재전송
           </button>
