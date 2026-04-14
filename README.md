@@ -38,13 +38,22 @@ JWT 기반 인증 시스템
 - **자동 매칭**: 양쪽 모두 LIKE 시 Match 생성 → 채팅방 자동 생성
 - **중복 방지**: user1_id + user2_id 유니크 제약
 
-### 3. Chat (실시간 채팅)
+### 3. ChatRoom (채팅방)
+
+Match와 ChatRoom을 별도 엔티티로 분리
+
+- **Match**: 두 유저 간의 매칭 관계만 담당
+- **ChatRoom**: 채팅 상태(ACTIVE/CLOSED), 나가기 등 채팅방 라이프사이클 담당
+- **채팅방 생성**: 매칭 성공 시 자동으로 ChatRoom 생성
+- **나가기**: ChatRoom status를 CLOSED로 변경, 이후 메시지 전송 불가
+
+### 4. Chat (실시간 채팅)
 
 WebSocket 기반 실시간 메시지 전송
 
 - **프로토콜**: STOMP over WebSocket
 - **인증**: STOMP CONNECT 시 JWT 토큰 검증, 세션에 userId/언어 정보 저장
-- **메시지 전파**: Redis Pub/Sub (다중 서버 대응)
+- **메시지 전파**: Redis Pub/Sub - 다중 서버 환경에서 WebSocket 메시지를 모든 서버 인스턴스에 전파하기 위해 사용
 - **저장소**: MongoDB
 - **커서 페이징**: createdAt 기반 무한 스크롤 (복합 인덱스 사용)
 - **읽음 처리**: 읽음 상태 전송
@@ -83,6 +92,12 @@ WebSocket 기반 실시간 메시지 전송
 - **임베딩**: OpenAI text-embedding-3-small
 - **벡터 DB**: Pinecone (코사인 유사도)
 - **유사도 임계값**: 0.90 이상이면 캐시 히트
+
+#### 번역 실패 처리
+
+- **RabbitMQ DLQ**: 번역 요청 시 timeout queue에 메시지를 같이 발행하고 30초 TTL 만료 시 DLQ로 이동해서 FAILED 처리
+- **WebSocket 알림**: FAILED 상태는 DB에 저장되기 때문에 실시간 알림을 못 받아도 채팅방 재진입 시 확인 가능
+- **재시도**: 클라이언트에서 실패한 메시지 재전송 요청 가능
 
 ---
 
