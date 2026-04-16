@@ -13,10 +13,6 @@ import java.util.List;
 public interface ChatMessageRepository extends MongoRepository<ChatMessage,String> {
 //    List<ChatMessage> findByRoomIdOrderByCreatedAtDesc(Long roomId);
 
-    List<ChatMessage> findByRoomIdAndReadAtIsNull(Long roomId);
-
-    List<ChatMessage> findByRoomIdAndSenderIdNotAndReadAtIsNull(Long roomId, Long senderId);
-
     List<ChatMessage> findByRoomIdOrderByIdDesc(Long roomId, Pageable pageable);
 
     // 커서 이전 메시지 (위로 스크롤) — ObjectId 자체가 시간 정보를 포함하므로 동시성 누락 없음

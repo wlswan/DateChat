@@ -22,8 +22,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 
 import java.util.List;
@@ -40,6 +46,7 @@ public class ChatService {
     private final TranslationRequestPublisher translationRequestPublisher;
     private final TranslationService translationService;
     private final ChatPublisher chatPublisher;
+    private final MongoTemplate mongoTemplate;
 
     public ChatMessage saveMessage(Long roomId, Long senderId, String content) {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
@@ -103,11 +110,11 @@ public class ChatService {
     }
 
     public void markMessagesAsRead(Long roomId, Long readerId) {
-        List<ChatMessage> unReadMessages = chatMessageRepository.findByRoomIdAndSenderIdNotAndReadAtIsNull(roomId, readerId);
-
-        unReadMessages.forEach(ChatMessage::markAsRead);
-
-        chatMessageRepository.saveAll(unReadMessages);
+        Query query = new Query(Criteria.where("roomId").is(roomId)
+                .and("senderId").ne(readerId)
+                .and("readAt").isNull());
+        Update update = new Update().set("readAt", LocalDateTime.now());
+        mongoTemplate.updateMulti(query, update, ChatMessage.class);
     }
 
     public void requestTranslation(String messageId, Long roomId, Long senderId, String content, Lang sourceLang, Lang targetLang) {
