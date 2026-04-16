@@ -17,15 +17,11 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage,Strin
 
     List<ChatMessage> findByRoomIdAndSenderIdNotAndReadAtIsNull(Long roomId, Long senderId);
 
-    List<ChatMessage> findByRoomIdOrderByCreatedAtDesc(Long roomId, Pageable pageable);
+    List<ChatMessage> findByRoomIdOrderByIdDesc(Long roomId, Pageable pageable);
 
-    // 커서 이전 메시지 (위로 스크롤)
-    List<ChatMessage> findByRoomIdAndCreatedAtBeforeOrderByCreatedAtDesc(
-            Long roomId, LocalDateTime cursor, Pageable pageable);
-
-    // 커서 이후 메시지 (새 메시지 로드)
-    List<ChatMessage> findByRoomIdAndCreatedAtAfterOrderByCreatedAtAsc(
-            Long roomId, LocalDateTime cursor, Pageable pageable);
+    // 커서 이전 메시지 (위로 스크롤) — ObjectId 자체가 시간 정보를 포함하므로 동시성 누락 없음
+    List<ChatMessage> findByRoomIdAndIdLessThanOrderByIdDesc(
+            Long roomId, String cursor, Pageable pageable);
 
     // 타임아웃 처리용: 특정 시간 이전에 생성된 PENDING 메시지 조회
     List<ChatMessage> findByTranslationStatusAndCreatedAtBefore(

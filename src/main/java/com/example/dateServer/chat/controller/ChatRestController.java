@@ -5,12 +5,9 @@ import com.example.dateServer.chat.dto.ChatEventBroadcast;
 import com.example.dateServer.chat.service.ChatPublisher;
 import com.example.dateServer.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -45,7 +42,7 @@ public class ChatRestController {
     public ResponseEntity<?> getMessagesWithCursor(
             @AuthenticationPrincipal Long userId,
             @PathVariable("roomId") Long roomId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursor,
+            @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(chatService.getMessagesByRoomIdWithCursor(userId, roomId, cursor, size));
     }

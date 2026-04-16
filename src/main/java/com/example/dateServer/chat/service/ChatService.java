@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -70,30 +69,28 @@ public class ChatService {
 
 
     public ChatMessagePageResponse getMessagesByRoomIdWithCursor(
-            Long userId, Long roomId, LocalDateTime cursor, int size) {
+            Long userId, Long roomId, String cursor, int size) {
 
         ChatRoom chatRoom = chatRoomRepository.findByIdWithUsers(roomId).orElseThrow(() -> new ChatRoomNotFoundException(roomId));
         Match match = chatRoom.getMatch();
         if(!match.getUser1().getId().equals(userId) && !match.getUser2().getId().equals(userId)){
             throw new ChatRoomAccessDeniedException();
         }
-        Pageable pageable = PageRequest.of(0,size+1);
+        Pageable pageable = PageRequest.of(0, size + 1);
         List<ChatMessage> messages;
 
-        if(cursor == null) {
-            messages = chatMessageRepository.findByRoomIdOrderByCreatedAtDesc(roomId, pageable);
-        }
-        else {
-            messages = chatMessageRepository.findByRoomIdAndCreatedAtBeforeOrderByCreatedAtDesc(roomId, cursor, pageable);
+        if (cursor == null) {
+            messages = chatMessageRepository.findByRoomIdOrderByIdDesc(roomId, pageable);
+        } else {
+            messages = chatMessageRepository.findByRoomIdAndIdLessThanOrderByIdDesc(roomId, cursor, pageable);
         }
 
-        boolean hasMore = messages.size()>size;
-        if(hasMore) {
+        boolean hasMore = messages.size() > size;
+        if (hasMore) {
             messages = messages.subList(0, size);
         }
 
-
-        LocalDateTime nextCursor = messages.isEmpty() ? null : messages.get(messages.size() - 1).getCreatedAt();
+        String nextCursor = messages.isEmpty() ? null : messages.get(messages.size() - 1).getId();
         List<ChatMessageResponse> messageResponses = messages.stream()
                 .map(ChatMessageResponse::from)
                 .toList();
