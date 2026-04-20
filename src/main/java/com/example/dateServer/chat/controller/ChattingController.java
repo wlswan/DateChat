@@ -9,7 +9,6 @@ import com.example.dateServer.chat.dto.ChatReadRequest;
 import com.example.dateServer.chat.dto.ChatMessageResponse;
 import com.example.dateServer.chat.dto.ChatSendRequest;
 import com.example.dateServer.chat.entity.ChatMessage;
-import com.example.dateServer.chat.service.ChatPublisher;
 import com.example.dateServer.chat.service.ChatService;
 import com.example.dateServer.common.Lang;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Controller;
 @RequiredArgsConstructor
 public class ChattingController {
 
-    private final ChatPublisher chatPublisher;
+    private final SimpMessagingTemplate simpMessagingTemplate;
     private final ChatService chatService;
 
     @MessageMapping("/chat.send")
@@ -39,7 +39,7 @@ public class ChattingController {
         }
 
         ChatMessage saved = chatService.saveMessage(request.getRoomId(), userId, request.getContent());
-        chatPublisher.publish("/topic/chat/" + saved.getRoomId(), ChatMessageResponse.from(saved));
+        simpMessagingTemplate.convertAndSend("/topic/chat/" + saved.getRoomId(), ChatMessageResponse.from(saved));
 
         chatService.requestTranslation(
                 saved.getId(),
@@ -77,7 +77,7 @@ public class ChattingController {
             return;
         }
         chatService.markMessagesAsRead(request.getRoomId(), userId);
-        chatPublisher.publish(
+        simpMessagingTemplate.convertAndSend(
                 "/topic/chat/" + request.getRoomId() + "/events",
                 new ChatEventBroadcast(ChatEventType.READ, request.getRoomId(), userId));
     }

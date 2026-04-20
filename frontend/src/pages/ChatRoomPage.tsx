@@ -77,7 +77,7 @@ export function ChatRoomPage() {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.messageId === message.messageId
-            ? { ...msg, translatedContent: message.content, translationFailed: false, translationPending: false }
+            ? { ...msg, translatedContent: message.translatedContent, translationFailed: false, translationPending: false }
             : msg
         )
       );

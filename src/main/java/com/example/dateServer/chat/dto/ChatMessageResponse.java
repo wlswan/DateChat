@@ -39,7 +39,7 @@ public class ChatMessageResponse {
                 .messageId(messageId)
                 .roomId(roomId)
                 .senderId(senderId)
-                .content(translatedContent)
+                .translatedContent(translatedContent)
                 .type(MessageType.TRANSLATED)
                 .build();
     }

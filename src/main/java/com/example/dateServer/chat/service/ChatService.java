@@ -26,6 +26,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +46,7 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final TranslationRequestPublisher translationRequestPublisher;
     private final TranslationService translationService;
-    private final ChatPublisher chatPublisher;
+    private final SimpMessagingTemplate simpMessagingTemplate;
     private final MongoTemplate mongoTemplate;
 
     public ChatMessage saveMessage(Long roomId, Long senderId, String content) {
@@ -136,7 +137,7 @@ public class ChatService {
                 message.updateTranslationSuccess(translated); // SUCCESS 상태 포함
                 chatMessageRepository.save(message);
             }
-            chatPublisher.publish("/topic/chat/" + roomId, ChatMessageResponse.translated(roomId, senderId, messageId, translated));
+            simpMessagingTemplate.convertAndSend("/topic/chat/" + roomId, ChatMessageResponse.translated(roomId, senderId, messageId, translated));
             log.info("캐시 히트로 즉시 번역 완료: {}", messageId);
             return;
         }
@@ -145,7 +146,7 @@ public class ChatService {
             message.updateTranslationStatus(TranslationStatus.PENDING);
             chatMessageRepository.save(message);
         });
-        chatPublisher.publish("/topic/chat/" + roomId,
+        simpMessagingTemplate.convertAndSend("/topic/chat/" + roomId,
                 ChatMessageResponse.translationPending(roomId, senderId, messageId));
 
         TranslationRequest request = TranslationRequest.builder()
@@ -165,7 +166,7 @@ public class ChatService {
                 message.updateTranslationStatus(TranslationStatus.FAILED);
                 chatMessageRepository.save(message);
             });
-            chatPublisher.publish("/topic/chat/" + roomId, ChatMessageResponse.translationFailed(roomId, senderId, messageId));
+            simpMessagingTemplate.convertAndSend("/topic/chat/" + roomId, ChatMessageResponse.translationFailed(roomId, senderId, messageId));
         }
     }
 

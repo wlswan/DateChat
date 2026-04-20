@@ -4,12 +4,12 @@ import com.example.dateServer.chat.TranslationStatus;
 import com.example.dateServer.chat.entity.ChatMessage;
 import com.example.dateServer.chat.repository.ChatMessageRepository;
 import com.example.dateServer.chat.dto.ChatMessageResponse;
-import com.example.dateServer.chat.service.ChatPublisher;
 import com.example.dateServer.config.RabbitMQConfig;
 import com.example.dateServer.translation.dto.TranslationResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 public class TranslationResultConsumer {
 
     private final ChatMessageRepository chatMessageRepository;
-    private final ChatPublisher chatPublisher;
+    private final SimpMessagingTemplate simpMessagingTemplate;
 
     @RabbitListener(queues = RabbitMQConfig.TRANSLATION_RESULT_QUEUE)
     public void consume(TranslationResult result) {
@@ -27,7 +27,7 @@ public class TranslationResultConsumer {
         if (!result.isSuccess()) {
             log.error("번역 실패 - 메시지 ID: {}, 에러: {}", result.getMessageId(), result.getErrorMessage());
             tryUpdateStatus(result.getMessageId(), TranslationStatus.FAILED);
-            chatPublisher.publish("/topic/chat/" + result.getRoomId(),
+            simpMessagingTemplate.convertAndSend("/topic/chat/" + result.getRoomId(),
                     ChatMessageResponse.translationFailed(result.getRoomId(), result.getSenderId(), result.getMessageId()));
             return;
         }
@@ -41,7 +41,7 @@ public class TranslationResultConsumer {
         message.updateTranslationSuccess(result.getTranslatedContent());
         chatMessageRepository.save(message);
 
-        chatPublisher.publish("/topic/chat/" + result.getRoomId(),
+        simpMessagingTemplate.convertAndSend("/topic/chat/" + result.getRoomId(),
                 ChatMessageResponse.translated(result.getRoomId(), result.getSenderId(), result.getMessageId(), result.getTranslatedContent()));
 
         log.info("번역 완료 - 메시지 ID: {}", result.getMessageId());

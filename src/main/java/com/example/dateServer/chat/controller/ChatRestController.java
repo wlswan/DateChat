@@ -2,10 +2,10 @@ package com.example.dateServer.chat.controller;
 
 import com.example.dateServer.chat.ChatEventType;
 import com.example.dateServer.chat.dto.ChatEventBroadcast;
-import com.example.dateServer.chat.service.ChatPublisher;
 import com.example.dateServer.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class ChatRestController {
 
     private final ChatService chatService;
-    private final ChatPublisher chatPublisher;
+    private final SimpMessagingTemplate simpMessagingTemplate;
 
     @GetMapping("/rooms")
     public ResponseEntity<?> getChatRooms(@AuthenticationPrincipal Long userId) {
@@ -32,7 +32,7 @@ public class ChatRestController {
     public ResponseEntity<?> leaveRoom(@AuthenticationPrincipal Long userId,
                                        @PathVariable("roomId") Long roomId) {
         chatService.leaveRoom(userId, roomId);
-        chatPublisher.publish(
+        simpMessagingTemplate.convertAndSend(
                 "/topic/chat/" + roomId + "/events",
                 new ChatEventBroadcast(ChatEventType.ROOM_CLOSED, roomId, userId));
         return ResponseEntity.ok().build();
