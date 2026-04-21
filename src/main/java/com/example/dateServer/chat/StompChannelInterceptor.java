@@ -2,8 +2,11 @@ package com.example.dateServer.chat;
 
 import com.example.dateServer.auth.JwtProvider;
 import com.example.dateServer.auth.entity.User;
+import com.example.dateServer.auth.exception.InvalidAccessTokenException;
 import com.example.dateServer.auth.exception.UserNotFoundException;
 import com.example.dateServer.auth.repository.UserRepository;
+import com.example.dateServer.chat.exception.ChatRoomAccessDeniedException;
+import com.example.dateServer.chat.exception.ChatRoomClosedException;
 import com.example.dateServer.common.Lang;
 import com.example.dateServer.chat.entity.ChatRoom;
 import com.example.dateServer.chat.entity.ChatRoomStatus;
@@ -14,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
@@ -35,7 +37,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 
     private static final String USER_ID_KEY = "userId";
     private static final String USER_LANG_KEY = "userLang";
-    private static final String TARGET_LANG_KEY = "targetLangs";
+    private static final String TARGET_LANG_KEY = "targetRoomIdsAndLangs";
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -70,14 +72,14 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.warn("WebSocket 연결 거부: Authorization 헤더 없음");
-            throw new MessagingException("인증 토큰이 필요합니다");
+            throw new InvalidAccessTokenException();
         }
 
         String token = authHeader.substring(7);
 
         if (!jwtProvider.validateToken(token)) {
             log.warn("WebSocket 연결 거부: 유효하지 않은 토큰");
-            throw new MessagingException("유효하지 않은 토큰입니다");
+            throw new InvalidAccessTokenException();
         }
 
         Long userId = jwtProvider.getUserId(token);
@@ -97,7 +99,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
     private void handleSubscribe(StompHeaderAccessor accessor) {
         String destination = accessor.getDestination();
 
-        if (destination == null || !destination.matches("/topic/chat/\\d+")) {
+        if (destination == null || !destination.matches("/topic/chat/\\d+(/events)?")) {
             return;
         }
 
@@ -107,16 +109,22 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 
         ChatRoom chatRoom = chatRoomRepository.findByIdWithUsers(roomId).orElseThrow(() -> new ChatRoomNotFoundException(roomId));
         if (chatRoom.getStatus() == ChatRoomStatus.CLOSED) {
-            throw new MessagingException("종료된 채팅방입니다.");
+            throw new ChatRoomClosedException();
         }
+
         Match match = chatRoom.getMatch();
-        Lang targetLang = match.getUser1().getId().equals(userId) ? match.getUser2().getLang() : match.getUser1().getLang();
+        if (!match.getUser1().getId().equals(userId) && !match.getUser2().getId().equals(userId)) {
+            throw new ChatRoomAccessDeniedException();
+        }
+        if(!destination.endsWith("/events")) {
+            Lang targetLang = match.getUser1().getId().equals(userId) ? match.getUser2().getLang() : match.getUser1().getLang();
 
-        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
-        Map<Long, Lang> targetLangs = (Map<Long, Lang>) sessionAttributes.get(TARGET_LANG_KEY);
+            Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+            Map<Long, Lang> targetRoomIdsAndLangs = (Map<Long, Lang>) sessionAttributes.get(TARGET_LANG_KEY);
 
-        targetLangs.put(roomId, targetLang);
-        log.info("채팅방 구독: userId={}, roomId={}, targetLang={}", userId, roomId, targetLang);
+            targetRoomIdsAndLangs.put(roomId, targetLang);
+            log.info("채팅방 구독: userId={}, roomId={}, targetLang={}", userId, roomId, targetLang);
+        }
     }
 
     private void handleDisconnect(StompHeaderAccessor accessor) {
@@ -130,7 +138,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 
         if (userId == null) {
             log.warn("{} 거부: 인증되지 않은 사용자", action);
-            throw new MessagingException("인증이 필요합니다");
+            throw new InvalidAccessTokenException();
         }
     }
 
@@ -143,9 +151,8 @@ public class StompChannelInterceptor implements ChannelInterceptor {
     }
 
     private static Long getRoomId(String destination) {
-        String[] splits = destination.split("/");
-        Long roomId = Long.parseLong(splits[splits.length - 1]);
-        return roomId;
+            String[] splits = destination.split("/");
+        return Long.parseLong(splits[3]);
     }
 
     public static Long getUserId(SimpMessageHeaderAccessor accessor) {
