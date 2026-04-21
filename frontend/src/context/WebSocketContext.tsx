@@ -11,6 +11,7 @@ import { Client, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { storage } from '../utils/storage';
 import { useAuth } from '../hooks/useAuth';
+import { authApi } from '../api/auth.api';
 import type { ChatMessage, ChatEvent, SendMessageRequest, ChatReadRequest, RetryTranslationRequest } from '../types/chat.types';
 
 interface WebSocketContextType {
@@ -51,6 +52,17 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },
+      beforeConnect: async () => {
+        try {
+          const newToken = await authApi.refresh();
+          storage.setAccessToken(newToken);
+          client.connectHeaders = { Authorization: `Bearer ${newToken}` };
+        } catch {
+          // refresh 실패 시 기존 토큰으로 시도
+          const current = storage.getAccessToken();
+          if (current) client.connectHeaders = { Authorization: `Bearer ${current}` };
+        }
+      },
       debug: (str) => {
         console.log('[STOMP]', str);
       },
@@ -80,9 +92,23 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     };
 
     client.onStompError = (frame) => {
+      const errorCode = frame.headers['error-code'];
       const message = frame.headers['message'];
-      console.error('STOMP error:', message);
-      if (message?.includes('종료된 채팅방')) {
+      console.error('STOMP error:', errorCode, message);
+
+      if (errorCode === 'TOKEN_EXPIRED') {
+        authApi.refresh()
+          .then((newToken) => {
+            storage.setAccessToken(newToken);
+          })
+          .catch(() => {
+            storage.clearTokens();
+            window.location.href = '/login';
+          });
+      } else if (errorCode === 'UNAUTHORIZED') {
+        storage.clearTokens();
+        window.location.href = '/login';
+      } else if (errorCode === 'CHAT_ROOM_CLOSED' || errorCode === 'CHAT_ROOM_NOT_FOUND') {
         errorCallbackRef.current?.('종료된 채팅방입니다.');
       }
     };

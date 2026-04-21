@@ -7,6 +7,8 @@ import com.example.dateServer.chat.dto.ChatRoomResponse;
 import com.example.dateServer.chat.entity.ChatMessage;
 import com.example.dateServer.chat.entity.ChatRoom;
 import com.example.dateServer.chat.entity.ChatRoomStatus;
+import com.example.dateServer.chat.exception.ChatMessageAccessDeniedException;
+import com.example.dateServer.chat.exception.ChatMessageNotFoundException;
 import com.example.dateServer.chat.exception.ChatRoomAccessDeniedException;
 import com.example.dateServer.chat.exception.ChatRoomClosedException;
 import com.example.dateServer.chat.exception.ChatRoomNotFoundException;
@@ -63,18 +65,6 @@ public class ChatService {
                 .build();
         return chatMessageRepository.save(message);
     }
-
-//    public List<ChatMessageResponse> getMessagesByRoomId(Long userId, Long roomId) {
-//        Match match = matchRepository.findById(roomId).orElseThrow(IllegalArgumentException::new);
-//        if (!(match.getUser1().getId().equals(userId))&& !(match.getUser2().getId().equals(userId))) {
-//            throw new IllegalArgumentException("접근 권한 없음");
-//        }
-//
-//        return chatMessageRepository.findByRoomIdOrderByCreatedAtDesc(roomId).stream()
-//                .map(ChatMessageResponse::from)
-//                .collect(Collectors.toList());
-//    }
-
 
     public ChatMessagePageResponse getMessagesByRoomIdWithCursor(
             Long userId, Long roomId, String cursor, int size) {
@@ -171,6 +161,11 @@ public class ChatService {
     }
 
     public void retryTranslation(String messageId, Long roomId, Long senderId, String content, Lang sourceLang, Lang targetLang) {
+        ChatMessage message = chatMessageRepository.findById(messageId)
+                .orElseThrow(() -> new ChatMessageNotFoundException(messageId));
+        if (!message.getSenderId().equals(senderId)) {
+            throw new ChatMessageAccessDeniedException();
+        }
         log.info("번역 재시도 요청 - 메시지 ID: {}, {} → {}", messageId, sourceLang, targetLang);
         requestTranslation(messageId, roomId, senderId, content, sourceLang, targetLang);
     }

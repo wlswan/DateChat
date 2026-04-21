@@ -4,13 +4,17 @@ import com.example.dateServer.chat.*;
 import com.example.dateServer.chat.dto.ChatErrorResponse;
 import com.example.dateServer.chat.dto.ChatEventBroadcast;
 import com.example.dateServer.chat.dto.ChatRetryTranslationRequest;
+import com.example.dateServer.chat.exception.ChatMessageAccessDeniedException;
+import com.example.dateServer.chat.exception.ChatMessageNotFoundException;
 import com.example.dateServer.chat.exception.ChatRoomClosedException;
+import com.example.dateServer.chat.exception.ChatRoomNotFoundException;
 import com.example.dateServer.chat.dto.ChatReadRequest;
 import com.example.dateServer.chat.dto.ChatMessageResponse;
 import com.example.dateServer.chat.dto.ChatSendRequest;
 import com.example.dateServer.chat.entity.ChatMessage;
 import com.example.dateServer.chat.service.ChatService;
 import com.example.dateServer.common.Lang;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
@@ -29,7 +33,7 @@ public class ChattingController {
     private final ChatService chatService;
 
     @MessageMapping("/chat.send")
-    public void sendMessage(ChatSendRequest request, SimpMessageHeaderAccessor accessor) {
+    public void sendMessage(@Valid ChatSendRequest request, SimpMessageHeaderAccessor accessor) {
         Long userId = StompChannelInterceptor.getUserId(accessor);
         Lang userLang = StompChannelInterceptor.getUserLang(accessor);
         Lang targetLang = StompChannelInterceptor.getTargetLang(accessor, request.getRoomId());
@@ -62,13 +66,6 @@ public class ChattingController {
         Lang targetLang = StompChannelInterceptor.getTargetLang(accessor, request.getRoomId());
         chatService.retryTranslation(request.getMessageId(), request.getRoomId(), userId, request.getContent(), userLang, targetLang);
     }
-
-    @MessageExceptionHandler(ChatRoomClosedException.class)
-    @SendToUser("/queue/errors")
-    public ChatErrorResponse handleChatRoomClosedException(ChatRoomClosedException e) {
-        log.warn("종료된 채팅방 메시지 전송 시도: {}", e.getMessage());
-        return new ChatErrorResponse(e.getMessage());
-    }
     @MessageMapping("/chat.read")
     public void readMessage(ChatReadRequest request, SimpMessageHeaderAccessor accessor) {
         Long userId = StompChannelInterceptor.getUserId(accessor);
@@ -81,4 +78,39 @@ public class ChattingController {
                 "/topic/chat/" + request.getRoomId() + "/events",
                 new ChatEventBroadcast(ChatEventType.READ, request.getRoomId(), userId));
     }
+    @MessageExceptionHandler(ChatRoomClosedException.class)
+    @SendToUser("/queue/errors")
+    public ChatErrorResponse handleChatRoomClosedException(ChatRoomClosedException e) {
+        log.warn("종료된 채팅방 메시지 전송 시도: {}", e.getMessage());
+        return new ChatErrorResponse(e.getMessage());
+    }
+
+    @MessageExceptionHandler(ChatRoomNotFoundException.class)
+    @SendToUser("/queue/errors")
+    public ChatErrorResponse handleChatRoomNotFoundException(ChatRoomNotFoundException e) {
+        log.warn("존재하지 않는 채팅방 메시지 전송 시도: {}", e.getMessage());
+        return new ChatErrorResponse(e.getMessage());
+    }
+
+    @MessageExceptionHandler(ChatMessageNotFoundException.class)
+    @SendToUser("/queue/errors")
+    public ChatErrorResponse handleChatMessageNotFoundException(ChatMessageNotFoundException e) {
+        log.warn("존재하지 않는 메시지 접근 시도: {}", e.getMessage());
+        return new ChatErrorResponse(e.getMessage());
+    }
+
+    @MessageExceptionHandler(ChatMessageAccessDeniedException.class)
+    @SendToUser("/queue/errors")
+    public ChatErrorResponse handleChatMessageAccessDeniedException(ChatMessageAccessDeniedException e) {
+        log.warn("타인 메시지 번역 재시도 시도: {}", e.getMessage());
+        return new ChatErrorResponse(e.getMessage());
+    }
+
+    @MessageExceptionHandler(Exception.class)
+    @SendToUser("/queue/errors")
+    public ChatErrorResponse handleException(Exception e) {
+        log.error("WebSocket 처리 중 예외 발생", e);
+        return new ChatErrorResponse("서버 오류가 발생했습니다.");
+    }
+
 }
