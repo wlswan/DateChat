@@ -1,6 +1,6 @@
 package com.example.dateServer.auth.entity;
 
-import com.example.dateServer.auth.ProfileUpdateRequest;
+import com.example.dateServer.auth.dto.ProfileUpdateRequest;
 import com.example.dateServer.common.Lang;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

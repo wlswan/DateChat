@@ -11,7 +11,7 @@ import { Client, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { storage } from '../utils/storage';
 import { useAuth } from '../hooks/useAuth';
-import { authApi } from '../api/auth.api';
+import { isTokenExpired, refreshAccessToken } from '../api/client';
 import type { ChatMessage, ChatEvent, SendMessageRequest, ChatReadRequest, RetryTranslationRequest } from '../types/chat.types';
 
 interface WebSocketContextType {
@@ -53,14 +53,17 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         Authorization: `Bearer ${token}`,
       },
       beforeConnect: async () => {
-        try {
-          const newToken = await authApi.refresh();
-          storage.setAccessToken(newToken);
-          client.connectHeaders = { Authorization: `Bearer ${newToken}` };
-        } catch {
-          // refresh 실패 시 기존 토큰으로 시도
-          const current = storage.getAccessToken();
-          if (current) client.connectHeaders = { Authorization: `Bearer ${current}` };
+        const current = storage.getAccessToken();
+        if (isTokenExpired(current)) {
+          try {
+            const newToken = await refreshAccessToken();
+            client.connectHeaders = { Authorization: `Bearer ${newToken}` };
+          } catch {
+            // refresh 실패 → 로그인 페이지로 이동은 axios 인터셉터가 처리
+            if (current) client.connectHeaders = { Authorization: `Bearer ${current}` };
+          }
+        } else {
+          client.connectHeaders = { Authorization: `Bearer ${current}` };
         }
       },
       debug: (str) => {
@@ -97,10 +100,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       console.error('STOMP error:', errorCode, message);
 
       if (errorCode === 'TOKEN_EXPIRED') {
-        authApi.refresh()
-          .then((newToken) => {
-            storage.setAccessToken(newToken);
-          })
+        refreshAccessToken()
           .catch(() => {
             storage.clearTokens();
             window.location.href = '/login';
@@ -142,7 +142,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       }
 
       const subscription = client.subscribe(
-        `/topic/chat/${roomId}`,
+        `/topic/chat.${roomId}`,
         (message: IMessage) => {
           try {
             const chatMessage: ChatMessage = JSON.parse(message.body);
@@ -167,7 +167,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       if (existingSub) existingSub.unsubscribe();
 
       const subscription = client.subscribe(
-        `/topic/chat/${roomId}/events`,
+        `/topic/chat.${roomId}.events`,
         (message: IMessage) => {
           try {
             const event: ChatEvent = JSON.parse(message.body);

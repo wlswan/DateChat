@@ -1,6 +1,6 @@
 package com.example.dateServer.chat;
 
-import com.example.dateServer.auth.JwtProvider;
+import com.example.dateServer.auth.service.JwtProvider;
 import com.example.dateServer.auth.entity.User;
 import com.example.dateServer.auth.exception.InvalidAccessTokenException;
 import com.example.dateServer.auth.exception.UserNotFoundException;
@@ -99,11 +99,11 @@ public class StompChannelInterceptor implements ChannelInterceptor {
     private void handleSubscribe(StompHeaderAccessor accessor) {
         String destination = accessor.getDestination();
 
-        if (destination == null || !destination.matches("/topic/chat/\\d+(/events)?")) {
+        if (destination == null || !destination.matches("/topic/chat\\.\\d+(\\.events)?")) {
             return;
         }
 
-        // /topic/chat/123
+        // /topic/chat.123
         Long roomId = getRoomId(destination);
         Long userId = getUserIdFromSession(accessor);
 
@@ -116,7 +116,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
         if (!match.getUser1().getId().equals(userId) && !match.getUser2().getId().equals(userId)) {
             throw new ChatRoomAccessDeniedException();
         }
-        if(!destination.endsWith("/events")) {
+        if(!destination.endsWith(".events")) {
             Lang targetLang = match.getUser1().getId().equals(userId) ? match.getUser2().getLang() : match.getUser1().getLang();
 
             Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
@@ -151,8 +151,10 @@ public class StompChannelInterceptor implements ChannelInterceptor {
     }
 
     private static Long getRoomId(String destination) {
-            String[] splits = destination.split("/");
-        return Long.parseLong(splits[3]);
+        // "/topic/chat.123" 또는 "/topic/chat.123.events"
+        String afterPrefix = destination.substring("/topic/chat.".length()); // "123" or "123.events"
+        String roomIdStr = afterPrefix.contains(".") ? afterPrefix.substring(0, afterPrefix.indexOf('.')) : afterPrefix;
+        return Long.parseLong(roomIdStr);
     }
 
     public static Long getUserId(SimpMessageHeaderAccessor accessor) {

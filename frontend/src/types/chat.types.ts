@@ -1,4 +1,3 @@
-export type ChatMessageType = 'TRANSLATED' | 'TRANSLATION_PENDING' | 'TRANSLATION_FAILED';
 export type ChatEventType = 'READ' | 'ROOM_CLOSED';
 export type TranslationStatus = 'NONE' | 'PENDING' | 'SUCCESS' | 'FAILED';
 
@@ -6,12 +5,11 @@ export interface ChatMessage {
   messageId: string;
   roomId: number;
   senderId: number;
-  content: string;
+  content: string | null;
   translatedContent: string | null;
-  translationStatus?: TranslationStatus; // 서버 영속 상태 (REST 로드 시 복원용)
-  createdAt: string;
+  translationStatus: TranslationStatus; // 서버 영속 상태
+  createdAt: string | null;
   readAt: string | null;
-  type?: ChatMessageType;
   translationFailed?: boolean;    // 프론트 UI 상태
   translationPending?: boolean;   // 재시도 요청 후 응답 대기 중
   sendFailed?: boolean;           // 낙관적 업데이트 후 서버 echo 미수신

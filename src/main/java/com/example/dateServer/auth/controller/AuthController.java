@@ -1,13 +1,14 @@
-package com.example.dateServer.auth;
+package com.example.dateServer.auth.controller;
 
 import com.example.dateServer.auth.dto.LoginRequest;
 import com.example.dateServer.auth.dto.LoginResponse;
 import com.example.dateServer.auth.dto.LogoutResponse;
 import com.example.dateServer.auth.dto.RefreshResponse;
+import com.example.dateServer.auth.dto.SignupRequest;
 import com.example.dateServer.auth.dto.SignupResponse;
 import com.example.dateServer.auth.dto.TokenPairs;
 import com.example.dateServer.auth.entity.User;
-import com.example.dateServer.auth.dto.SignupRequest;
+import com.example.dateServer.auth.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

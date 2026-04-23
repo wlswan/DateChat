@@ -1,4 +1,4 @@
-package com.example.dateServer.auth;
+package com.example.dateServer.auth.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;

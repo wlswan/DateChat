@@ -27,7 +27,7 @@ public class TranslationResultConsumer {
         if (!result.isSuccess()) {
             log.error("번역 실패 - 메시지 ID: {}, 에러: {}", result.getMessageId(), result.getErrorMessage());
             tryUpdateStatus(result.getMessageId(), TranslationStatus.FAILED);
-            simpMessagingTemplate.convertAndSend("/topic/chat/" + result.getRoomId(),
+            simpMessagingTemplate.convertAndSend("/topic/chat." + result.getRoomId(),
                     ChatMessageResponse.translationFailed(result.getRoomId(), result.getSenderId(), result.getMessageId()));
             return;
         }
@@ -41,7 +41,7 @@ public class TranslationResultConsumer {
         message.updateTranslationSuccess(result.getTranslatedContent());
         chatMessageRepository.save(message);
 
-        simpMessagingTemplate.convertAndSend("/topic/chat/" + result.getRoomId(),
+        simpMessagingTemplate.convertAndSend("/topic/chat." + result.getRoomId(),
                 ChatMessageResponse.translated(result.getRoomId(), result.getSenderId(), result.getMessageId(), result.getTranslatedContent()));
 
         log.info("번역 완료 - 메시지 ID: {}", result.getMessageId());

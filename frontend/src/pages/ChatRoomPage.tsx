@@ -73,7 +73,7 @@ export function ChatRoomPage() {
   }, [messages]);
 
   const handleNewMessage = useCallback((message: ChatMessageType) => {
-    if (message.type === 'TRANSLATED' && message.messageId) {
+    if (message.translationStatus === 'SUCCESS') {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.messageId === message.messageId
@@ -81,7 +81,10 @@ export function ChatRoomPage() {
             : msg
         )
       );
-    } else if (message.type === 'TRANSLATION_PENDING' && message.messageId) {
+      return;
+    }
+
+    if (message.translationStatus === 'PENDING') {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.messageId === message.messageId
@@ -89,7 +92,10 @@ export function ChatRoomPage() {
             : msg
         )
       );
-    } else if (message.type === 'TRANSLATION_FAILED' && message.messageId) {
+      return;
+    }
+
+    if (message.translationStatus === 'FAILED') {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.messageId === message.messageId
@@ -97,31 +103,33 @@ export function ChatRoomPage() {
             : msg
         )
       );
-    } else {
-      setMessages((prev) => {
-        // 내가 보낸 메시지가 서버에서 돌아오면 임시 메시지와 교체
-        if (message.senderId === user?.id) {
-          const tempIdx = prev.findIndex(
-            (msg) => msg.messageId.startsWith('temp-') && msg.content === message.content
-          );
-          if (tempIdx !== -1) {
-            const tempId = prev[tempIdx].messageId;
-            const timer = pendingTimersRef.current.get(tempId);
-            if (timer) {
-              clearTimeout(timer);
-              pendingTimersRef.current.delete(tempId);
-            }
-            pendingTempIdsRef.current.delete(tempId);
-            const updated = [...prev];
-            updated[tempIdx] = message;
-            return updated;
+      return;
+    }
+
+    // translationStatus === 'NONE' → 신규 메시지
+    setMessages((prev) => {
+      // 내가 보낸 메시지가 서버에서 돌아오면 임시 메시지와 교체
+      if (message.senderId === user?.id) {
+        const tempIdx = prev.findIndex(
+          (msg) => msg.messageId.startsWith('temp-') && msg.content === message.content
+        );
+        if (tempIdx !== -1) {
+          const tempId = prev[tempIdx].messageId;
+          const timer = pendingTimersRef.current.get(tempId);
+          if (timer) {
+            clearTimeout(timer);
+            pendingTimersRef.current.delete(tempId);
           }
+          pendingTempIdsRef.current.delete(tempId);
+          const updated = [...prev];
+          updated[tempIdx] = normalizeMessage(message);
+          return updated;
         }
-        return [...prev, message];
-      });
-      if (message.senderId !== user?.id && roomIdNum) {
-        markAsRead({ roomId: roomIdNum });
       }
+      return [...prev, normalizeMessage(message)];
+    });
+    if (message.senderId !== user?.id && roomIdNum) {
+      markAsRead({ roomId: roomIdNum });
     }
   }, [user?.id, roomIdNum, markAsRead]);
 
@@ -251,6 +259,7 @@ export function ChatRoomPage() {
       senderId: user.id,
       content,
       translatedContent: null,
+      translationStatus: 'NONE',
       createdAt: new Date().toISOString(),
       readAt: null,
     };

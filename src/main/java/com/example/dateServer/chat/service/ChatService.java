@@ -127,7 +127,7 @@ public class ChatService {
                 message.updateTranslationSuccess(translated); // SUCCESS 상태 포함
                 chatMessageRepository.save(message);
             }
-            simpMessagingTemplate.convertAndSend("/topic/chat/" + roomId, ChatMessageResponse.translated(roomId, senderId, messageId, translated));
+            simpMessagingTemplate.convertAndSend("/topic/chat." + roomId, ChatMessageResponse.translated(roomId, senderId, messageId, translated));
             log.info("캐시 히트로 즉시 번역 완료: {}", messageId);
             return;
         }
@@ -136,7 +136,7 @@ public class ChatService {
             message.updateTranslationStatus(TranslationStatus.PENDING);
             chatMessageRepository.save(message);
         });
-        simpMessagingTemplate.convertAndSend("/topic/chat/" + roomId,
+        simpMessagingTemplate.convertAndSend("/topic/chat." + roomId,
                 ChatMessageResponse.translationPending(roomId, senderId, messageId));
 
         TranslationRequest request = TranslationRequest.builder()
@@ -156,7 +156,7 @@ public class ChatService {
                 message.updateTranslationStatus(TranslationStatus.FAILED);
                 chatMessageRepository.save(message);
             });
-            simpMessagingTemplate.convertAndSend("/topic/chat/" + roomId, ChatMessageResponse.translationFailed(roomId, senderId, messageId));
+            simpMessagingTemplate.convertAndSend("/topic/chat." + roomId, ChatMessageResponse.translationFailed(roomId, senderId, messageId));
         }
     }
 

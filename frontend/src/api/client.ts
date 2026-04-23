@@ -8,7 +8,7 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Enable cookies for refresh token
+  withCredentials: true,
 });
 
 // Request interceptor to add auth token
@@ -23,7 +23,38 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-let isRefreshing = false;
+let refreshPromise: Promise<string> | null = null;
+
+/** JWT payload에서 만료 여부 확인 (서명 검증 없이) */
+export function isTokenExpired(token: string | null): boolean {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    // 30초 여유를 두고 만료 판단
+    return payload.exp * 1000 < Date.now() + 30_000;
+  } catch {
+    return true;
+  }
+}
+
+/** 진행 중인 refresh가 있으면 그것을 재사용, 없으면 새로 시작 */
+export function refreshAccessToken(): Promise<string> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = apiClient
+    .post<{ accessToken: string }>('/api/auth/refresh')
+    .then((res) => {
+      const newToken = res.data.accessToken;
+      storage.setAccessToken(newToken);
+      return newToken;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+}
+
 let refreshSubscribers: ((token: string) => void)[] = [];
 
 const onRefreshed = (token: string) => {
@@ -43,7 +74,7 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      if (isRefreshing) {
+      if (refreshPromise) {
         return new Promise((resolve) => {
           refreshSubscribers.push((token) => {
             originalRequest.headers.Authorization = `Bearer ${token}`;
@@ -53,12 +84,9 @@ apiClient.interceptors.response.use(
       }
 
       originalRequest._retry = true;
-      isRefreshing = true;
 
       try {
-        const response = await apiClient.post<{ accessToken: string }>('/api/auth/refresh');
-        const newToken = response.data.accessToken;
-        storage.setAccessToken(newToken);
+        const newToken = await refreshAccessToken();
         onRefreshed(newToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);
@@ -66,8 +94,6 @@ apiClient.interceptors.response.use(
         storage.clearTokens();
         window.location.href = '/login';
         return Promise.reject(error);
-      } finally {
-        isRefreshing = false;
       }
     }
 

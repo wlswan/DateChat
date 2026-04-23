@@ -1,4 +1,4 @@
-package com.example.dateServer.auth;
+package com.example.dateServer.auth.dto;
 
 import com.example.dateServer.auth.entity.Gender;
 import com.example.dateServer.auth.entity.User;

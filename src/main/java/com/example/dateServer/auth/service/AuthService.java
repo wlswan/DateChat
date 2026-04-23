@@ -1,4 +1,4 @@
-package com.example.dateServer.auth;
+package com.example.dateServer.auth.service;
 
 import com.example.dateServer.auth.dto.LoginRequest;
 import com.example.dateServer.auth.dto.TokenPairs;
@@ -9,8 +9,6 @@ import com.example.dateServer.auth.exception.InvalidRefreshTokenException;
 import com.example.dateServer.auth.exception.UserNotFoundException;
 import com.example.dateServer.auth.repository.UserRepository;
 import com.example.dateServer.auth.dto.SignupRequest;
-import com.example.dateServer.auth.service.RefreshTokenService;
-import com.example.dateServer.auth.service.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

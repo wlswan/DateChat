@@ -44,7 +44,7 @@ public class TranslationTimeoutConsumer {
         }
 
         simpMessagingTemplate.convertAndSend(
-                "/topic/chat/" + request.getRoomId(),
+                "/topic/chat." + request.getRoomId(),
                 ChatMessageResponse.translationFailed(request.getRoomId(), request.getSenderId(), request.getMessageId())
         );
 

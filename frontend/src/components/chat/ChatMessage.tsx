@@ -9,7 +9,7 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message, isOwn, onRetryTranslation, onResend }: ChatMessageProps) {
-  const formatTime = (dateString: string) => {
+  const formatTime = (dateString: string | null) => {
     if (!dateString) return '';
     // 마이크로초(소수점 6자리)를 밀리초(3자리)로 자름 (Safari 호환)
     const normalized = dateString.replace(/(\.\d{3})\d*/, '$1');

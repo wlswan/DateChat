@@ -43,7 +43,7 @@ public class ChattingController {
         }
 
         ChatMessage saved = chatService.saveMessage(request.getRoomId(), userId, request.getContent());
-        simpMessagingTemplate.convertAndSend("/topic/chat/" + saved.getRoomId(), ChatMessageResponse.from(saved));
+        simpMessagingTemplate.convertAndSend("/topic/chat." + saved.getRoomId(), ChatMessageResponse.from(saved));
 
         chatService.requestTranslation(
                 saved.getId(),
@@ -75,7 +75,7 @@ public class ChattingController {
         }
         chatService.markMessagesAsRead(request.getRoomId(), userId);
         simpMessagingTemplate.convertAndSend(
-                "/topic/chat/" + request.getRoomId() + "/events",
+                "/topic/chat." + request.getRoomId() + ".events",
                 new ChatEventBroadcast(ChatEventType.READ, request.getRoomId(), userId));
     }
     @MessageExceptionHandler(ChatRoomClosedException.class)

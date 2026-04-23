@@ -1,7 +1,9 @@
-package com.example.dateServer.auth;
+package com.example.dateServer.auth.service;
 
+import com.example.dateServer.auth.dto.ProfileUpdateRequest;
 import com.example.dateServer.auth.dto.UserPreferenceRequest;
 import com.example.dateServer.auth.dto.UserPreferenceResponse;
+import com.example.dateServer.auth.dto.UserResponse;
 import com.example.dateServer.auth.entity.User;
 import com.example.dateServer.auth.entity.UserPreference;
 import com.example.dateServer.auth.exception.UserNotFoundException;

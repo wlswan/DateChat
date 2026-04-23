@@ -1,8 +1,11 @@
-package com.example.dateServer.auth;
+package com.example.dateServer.auth.controller;
 
+import com.example.dateServer.auth.dto.ProfileUpdateRequest;
 import com.example.dateServer.auth.dto.UserPreferenceRequest;
 import com.example.dateServer.auth.dto.UserPreferenceResponse;
+import com.example.dateServer.auth.dto.UserResponse;
 import com.example.dateServer.auth.entity.User;
+import com.example.dateServer.auth.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

@@ -33,7 +33,7 @@ public class ChatRestController {
                                        @PathVariable("roomId") Long roomId) {
         chatService.leaveRoom(userId, roomId);
         simpMessagingTemplate.convertAndSend(
-                "/topic/chat/" + roomId + "/events",
+                "/topic/chat." + roomId + ".events",
                 new ChatEventBroadcast(ChatEventType.ROOM_CLOSED, roomId, userId));
         return ResponseEntity.ok().build();
     }
