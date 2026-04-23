@@ -2,9 +2,41 @@
 
 한국-일본 데이팅 앱 백엔드 서버
 
-시멘틱 캐싱을 적용한 번역 채팅 서버입니다. 
+시맨틱 캐싱을 적용한 번역 채팅 서버입니다.
 
 ---
+
+## 시스템 아키텍처
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                         Client                            │
+└────────────────────────┬─────────────────────────────────┘
+                         │ REST API / WebSocket (STOMP over SockJS)
+                         ▼
+┌──────────────────────────────────────────────────────────┐
+│                   Spring Boot Server                      │
+│                                                           │
+│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐  │
+│  │  Auth (JWT) │  │  Like/Match  │  │  Chat (STOMP)   │  │
+│  └──────┬──────┘  └──────┬───────┘  └────────┬────────┘  │
+└─────────┼───────────────-┼──────────────────-┼───────────┘
+          │                │                   │
+    ┌─────▼──────┐   ┌─────▼──────┐     ┌──────┴─────────────────────────┐
+    │   Redis    │   │   MySQL    │     │            RabbitMQ             │
+    │ - Refresh  │   │ - User     │     │  ┌────────────────────────────┐ │
+    │ - BlackList│   │ - Match    │     │  │ Translation Queue + DLQ    │ │
+    └────────────┘   │ - ChatRoom │     │  └─────────────┬──────────────┘ │
+                     └────────────┘     │  ┌─────────────▼──────────────┐ │
+                                        │  │ STOMP Relay (/topic)       │ │
+                                        │  └────────────────────────────┘ │
+                          ┌─────────────┘  └──────────────┬───────────────┘
+                          │                               │
+                    ┌─────▼──────┐               ┌────────▼───────────┐
+                    │  MongoDB   │               │ Translation Worker  │
+                    │ - ChatMsg  │               │ OpenAI + Pinecone   │
+                    └────────────┘               └────────────────────┘
+```
 
 ## 기술 스택
 
@@ -12,8 +44,8 @@
 |------|------|
 | **Framework** | Spring Boot 4.0.3, Java 21 |
 | **Database** | MySQL (사용자/매칭), MongoDB (채팅 메시지) |
-| **Cache** | Redis (세션, Pub/Sub) |
-| **Message Queue** | RabbitMQ (비동기 번역 처리) |
+| **Cache** | Redis (JWT 세션, 토큰 블랙리스트) |
+| **Message Queue** | RabbitMQ (비동기 번역 처리 + STOMP Relay) |
 | **Real-time** | WebSocket + STOMP |
 | **AI/ML** | OpenAI API (번역), Pinecone (벡터 검색) |
 
@@ -51,16 +83,18 @@ Match와 ChatRoom을 별도 엔티티로 분리
 
 WebSocket 기반 실시간 메시지 전송
 
-- **프로토콜**: STOMP over WebSocket
-- **인증**: STOMP CONNECT 시 JWT 토큰 검증, 세션에 userId/언어 정보 저장
-- **메시지 전파**: Redis Pub/Sub - 다중 서버 환경에서 WebSocket 메시지를 모든 서버 인스턴스에 전파하기 위해 사용
+- **프로토콜**: STOMP over WebSocket 
+- **브로커**: RabbitMQ STOMP Relay — `/topic`, `/queue` 구독을 RabbitMQ가 중계하여 다중 서버 지원
+- **인증**: STOMP CONNECT 시 JWT 검증, 세션에 userId/언어 저장
+- **구독 권한 검증**: SUBSCRIBE 단계에서 채팅방 멤버 여부 및 CLOSED 상태 확인
+- **예외 처리**: `StompErrorHandler`로 에러 프레임 변환 후 클라이언트 전달, `@Valid`로 입력값 검증
 - **저장소**: MongoDB
-- **커서 페이징**: createdAt 기반 무한 스크롤 (복합 인덱스 사용)
-- **읽음 처리**: 읽음 상태 전송
+- **커서 페이징**: ObjectId(String) 기반 무한 스크롤 (createdAt보다 정확한 순서 보장)
+- **읽음 처리**: `MongoTemplate.updateMulti` 단일 쿼리로 일괄 처리
 
 ```
 클라이언트 → WebSocket (STOMP) → JWT 인증 → ChatService → MongoDB 저장
-                                                        → Redis Pub/Sub → 상대방에게 전송
+                                                        → RabbitMQ STOMP Relay → 상대방에게 전송
                                                         → 번역 요청
 ```
 
@@ -92,6 +126,14 @@ WebSocket 기반 실시간 메시지 전송
 - **임베딩**: OpenAI text-embedding-3-small
 - **벡터 DB**: Pinecone (코사인 유사도)
 - **유사도 임계값**: 0.90 이상이면 캐시 히트
+
+#### 번역 상태 (TranslationStatus)
+
+| 상태 | 설명 |
+|------|------|
+| `PENDING` | 번역 요청 발행, 결과 대기 중 |
+| `SUCCESS` | 번역 완료 |
+| `FAILED` | 30초 TTL 초과 → DLQ 이동 → 실패 처리 |
 
 #### 번역 실패 처리
 
