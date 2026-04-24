@@ -32,11 +32,19 @@ export interface RetryTranslationRequest {
   content: string;
 }
 
+export type Lang = 'KR' | 'JP';
+export type ChatRoomStatus = 'ACTIVE' | 'CLOSED';
+
 export interface ChatRoomListResponse {
   roomId: number;
+  partnerId: number;
   partnerNickname: string;
   partnerProfileImageUrl: string | null;
-  createdAt: string;
+  partnerLang: Lang;
+  status: ChatRoomStatus;
+  lastMessageContent: string | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
 }
 
 export interface MemberInfo {

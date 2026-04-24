@@ -180,7 +180,7 @@ public class ChatService {
         chatRoom.close();
     }
 
-        public List<ChatRoomResponse> getChatRooms(Long userId) {
+    public List<ChatRoomResponse> getChatRooms(Long userId) {
         List<ChatRoom> chatRooms = chatRoomRepository.findRoomsWithMatchAndUsersByUserId(userId);
 
         return chatRooms.stream()
@@ -190,10 +190,23 @@ public class ChatService {
                             ? match.getUser2()
                             : match.getUser1();
 
+                    ChatMessage lastMessage = chatMessageRepository
+                            .findTopByRoomIdOrderByIdDesc(chatRoom.getId())
+                            .orElse(null);
+
+                    long unreadCount = chatMessageRepository
+                            .countByRoomIdAndSenderIdNotAndReadAtIsNull(chatRoom.getId(), userId);
+
                     return ChatRoomResponse.builder()
                             .roomId(chatRoom.getId())
                             .partnerId(partner.getId())
                             .partnerNickname(partner.getNickname())
+                            .partnerProfileImageUrl(partner.getProfileImageUrl())
+                            .partnerLang(partner.getLang())
+                            .status(chatRoom.getStatus())
+                            .lastMessageContent(lastMessage != null ? lastMessage.getContent() : null)
+                            .lastMessageAt(lastMessage != null ? lastMessage.getCreatedAt() : null)
+                            .unreadCount(unreadCount)
                             .build();
                 })
                 .collect(Collectors.toList());
