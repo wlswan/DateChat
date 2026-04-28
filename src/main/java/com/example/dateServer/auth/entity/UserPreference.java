@@ -26,5 +26,10 @@ public class UserPreference {
 
     private Integer maxHeight;
 
-
+    public void update(Integer minAge, Integer maxAge, Integer minHeight, Integer maxHeight) {
+        this.minAge = minAge;
+        this.maxAge = maxAge;
+        this.minHeight = minHeight;
+        this.maxHeight = maxHeight;
+    }
 }

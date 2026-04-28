@@ -1,10 +1,7 @@
 package com.example.dateServer.auth.controller;
 
-import com.example.dateServer.auth.dto.ProfileUpdateRequest;
-import com.example.dateServer.auth.dto.UserPreferenceRequest;
-import com.example.dateServer.auth.dto.UserPreferenceResponse;
+import com.example.dateServer.auth.dto.UserUpdateRequest;
 import com.example.dateServer.auth.dto.UserResponse;
-import com.example.dateServer.auth.entity.User;
 import com.example.dateServer.auth.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,23 +17,13 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getMe(@AuthenticationPrincipal Long userId) {
-        User me = userService.getMyInformation(userId);
-        return ResponseEntity.ok(UserResponse.from(me));
+        return ResponseEntity.ok(userService.getMe(userId));
     }
 
-    @PatchMapping("/profile")
-    public ResponseEntity<UserResponse> updateProfile(
+    @PatchMapping("/me")
+    public ResponseEntity<UserResponse> updateMe(
             @AuthenticationPrincipal Long userId,
-            @RequestBody ProfileUpdateRequest request) {
-        UserResponse response = userService.updateProfile(userId, request);
-        return ResponseEntity.ok(response);
-    }
-
-    @PatchMapping("/preference")
-    public ResponseEntity<UserPreferenceResponse> updatePreference(
-            @AuthenticationPrincipal Long userId,
-            @RequestBody UserPreferenceRequest request) {
-        UserPreferenceResponse response = userService.updatePreference(userId, request);
-        return ResponseEntity.ok(response);
+            @RequestBody UserUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateMe(userId, request));
     }
 }

@@ -1,6 +1,6 @@
 package com.example.dateServer.auth.entity;
 
-import com.example.dateServer.auth.dto.ProfileUpdateRequest;
+import com.example.dateServer.auth.dto.UserUpdateRequest;
 import com.example.dateServer.common.Lang;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -60,20 +60,17 @@ public class User {
         this.birthDate = birthDate;
     }
 
-    public void updateProfile(ProfileUpdateRequest request) {
-        this.gender = request.getGender();
-        this.birthDate = request.getBirthDate();
+    public void updateProfile(UserUpdateRequest request) {
         this.bio = request.getBio();
         this.profileImageUrl = request.getProfileImageUrl();
     }
 
-    public void createPreference(Integer minAge, Integer maxAge, Integer minHeight, Integer maxHeight) {
-        this.userPreference = UserPreference.builder()
-                .user(this)
-                .minAge(minAge)
-                .maxAge(maxAge)
-                .minHeight(minHeight)
-                .maxHeight(maxHeight)
-                .build();
+    public void updatePreference(Integer minAge, Integer maxAge, Integer minHeight, Integer maxHeight) {
+        if (this.userPreference == null) {
+            this.userPreference = UserPreference.builder()
+                    .user(this)
+                    .build();
+        }
+        this.userPreference.update(minAge, maxAge, minHeight, maxHeight);
     }
 }

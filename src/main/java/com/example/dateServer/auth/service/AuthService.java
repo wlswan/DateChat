@@ -34,6 +34,8 @@ public class AuthService {
                 .password(encodedPassword)
                 .lang(signupRequest.getLang())
                 .nickname(signupRequest.getNickname())
+                .gender(signupRequest.getGender())
+                .birthDate(signupRequest.getBirthDate())
                 .build();
 
         return userRepository.save(user);
