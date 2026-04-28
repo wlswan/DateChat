@@ -11,24 +11,17 @@ export interface SignUpRequest {
   password: string;
   nickname: string;
   lang: AppLang;
-}
-
-export interface ProfileUpdateRequest {
   gender: Gender;
   birthDate: string;
+}
+
+export interface UserUpdateRequest {
   bio?: string;
   profileImageUrl?: string;
-}
-
-export interface ReissueRequest {
-  refreshToken: string;
-}
-
-export interface TokenResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresIn: number;
+  minAge?: number;
+  maxAge?: number;
+  minHeight?: number;
+  maxHeight?: number;
 }
 
 export interface UserResponse {
@@ -36,11 +29,15 @@ export interface UserResponse {
   email: string;
   nickname: string;
   appLang: AppLang;
-  gender: Gender | null;
-  birthDate: string | null;
+  gender: Gender;
+  birthDate: string;
   bio: string | null;
   profileImageUrl: string | null;
   createdAt: string;
+  minAge: number | null;
+  maxAge: number | null;
+  minHeight: number | null;
+  maxHeight: number | null;
 }
 
 export type ProfileResponse = UserResponse;
@@ -55,17 +52,6 @@ export interface SignupResponse {
   nickname: string;
 }
 
-export interface UserPreferenceRequest {
-  minAge: number;
-  maxAge: number;
-  minHeight: number;
-  maxHeight: number;
-}
-
-export interface UserPreferenceResponse {
-  id: number;
-  minAge: number;
-  maxAge: number;
-  minHeight: number;
-  maxHeight: number;
+export interface ReissueRequest {
+  refreshToken: string;
 }

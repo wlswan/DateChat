@@ -10,6 +10,7 @@ import { ChatRoomPage } from './pages/ChatRoomPage';
 import { DiscoverPage } from './pages/DiscoverPage';
 import { MatchListPage } from './pages/MatchListPage';
 import { MatchDetailPage } from './pages/MatchDetailPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { useAuth } from './hooks/useAuth';
 
 function AppContent() {
@@ -33,6 +34,7 @@ function AppContent() {
           <Route path="/matches/:matchId" element={<MatchDetailPage />} />
           <Route path="/rooms" element={<ChatRoomListPage />} />
           <Route path="/rooms/:roomId" element={<ChatRoomPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
         <Route path="*" element={<Navigate to="/discover" replace />} />
       </Routes>

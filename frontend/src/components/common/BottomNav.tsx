@@ -31,6 +31,15 @@ export function BottomNav() {
         <span className="nav-icon">💬</span>
         <span className="nav-label">채팅</span>
       </NavLink>
+      <NavLink
+        to="/profile"
+        className={({ isActive }) =>
+          `nav-item ${isActive ? 'active' : ''}`
+        }
+      >
+        <span className="nav-icon">👤</span>
+        <span className="nav-label">프로필</span>
+      </NavLink>
     </nav>
   );
 }

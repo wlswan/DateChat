@@ -74,22 +74,11 @@ export function SignupPage() {
     setIsSubmitting(true);
 
     try {
-      // 1. Sign up
-      await signUp({ email, password, nickname, lang });
-
-      // 2. Login
+      await signUp({ email, password, nickname, lang, gender, birthDate });
       await login({ email, password });
-
-      // 3. Update profile
-      await authApi.updateProfile({
-        gender,
-        birthDate,
+      await authApi.updateMe({
         bio: bio || undefined,
         profileImageUrl: profileImageUrl || undefined,
-      });
-
-      // 4. Update preference
-      await authApi.updatePreference({
         minAge,
         maxAge,
         minHeight,

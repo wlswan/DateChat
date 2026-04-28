@@ -5,9 +5,7 @@ import type {
   LoginResponse,
   SignupResponse,
   ProfileResponse,
-  ProfileUpdateRequest,
-  UserPreferenceRequest,
-  UserPreferenceResponse,
+  UserUpdateRequest,
 } from '../types/auth.types';
 
 export const authApi = {
@@ -26,13 +24,8 @@ export const authApi = {
     return response.data;
   },
 
-  updateProfile: async (data: ProfileUpdateRequest): Promise<ProfileResponse> => {
-    const response = await apiClient.patch<ProfileResponse>('/api/users/profile', data);
-    return response.data;
-  },
-
-  updatePreference: async (data: UserPreferenceRequest): Promise<UserPreferenceResponse> => {
-    const response = await apiClient.patch<UserPreferenceResponse>('/api/users/preference', data);
+  updateMe: async (data: UserUpdateRequest): Promise<ProfileResponse> => {
+    const response = await apiClient.patch<ProfileResponse>('/api/users/me', data);
     return response.data;
   },
 
