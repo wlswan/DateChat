@@ -1,6 +1,7 @@
 package com.example.dateServer.translation.embedding;
 
 import com.example.dateServer.common.Lang;
+import com.example.dateServer.translation.exception.VectorStoreException;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import io.pinecone.clients.Index;
@@ -62,8 +63,7 @@ public class PineconeVectorStore implements VectorStore {
             return Optional.of(new SearchResult(best.getId(), original, translated, score));
 
         } catch (Exception e) {
-            log.error("[Pinecone] 검색 실패", e);
-            return Optional.empty();
+            throw new VectorStoreException("Pinecone 조회 실패", e);
         }
     }
 
@@ -82,7 +82,7 @@ public class PineconeVectorStore implements VectorStore {
             index.upsert(id, toList(embedding), null, null, metadata, namespace);
             log.debug("[Pinecone] 저장 완료 - 원본: '{}' -> 번역: '{}'", original, translated);
         } catch (Exception e) {
-            log.error("[Pinecone] 저장 실패", e);
+            throw new VectorStoreException("Pinecone 저장 실패", e);
         }
     }
 

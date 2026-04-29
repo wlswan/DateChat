@@ -1,12 +1,14 @@
 package com.example.dateServer.translation.embedding;
 
+import com.example.dateServer.translation.exception.EmbeddingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
-import java.util.List;
+import java.io.IOException;
 import java.util.Map;
 
 @Slf4j
@@ -46,19 +48,9 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
             log.debug("Generated embedding for: {} (dim={})", text, embedding.length);
             return embedding;
 
-        } catch (Exception e) {
-            log.error("Embedding failed: {}", text, e);
-            throw new RuntimeException("Embedding failed", e);
+        } catch (RestClientException | IOException e) {
+            throw new EmbeddingException("OpenAI 임베딩 실패", e);
         }
-    }
-
-    @Override
-    public float[] embedWithContext(String text, List<String> context) {
-        String combined = text;
-        if (context != null && !context.isEmpty()) {
-            combined = String.join(" ", context) + " " + text;
-        }
-        return embed(combined);
     }
 
     @Override
