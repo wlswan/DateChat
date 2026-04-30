@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
 @Document(collection = "messages")
 @CompoundIndexes({
     @CompoundIndex(def = "{'roomId': 1, '_id': -1}"),
-    @CompoundIndex(def = "{'roomId': 1, 'readAt': 1}")
+    @CompoundIndex(def = "{'roomId': 1, 'readAt': 1}"),
+    @CompoundIndex(def = "{'translationStatus': 1, 'createdAt': 1}")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

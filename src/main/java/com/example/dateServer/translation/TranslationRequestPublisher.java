@@ -15,18 +15,11 @@ public class TranslationRequestPublisher {
     private final RabbitTemplate rabbitTemplate;
 
     public void publish(TranslationRequest request) {
-        log.info("번역 요청 발행 시작 - 메시지 ID: {}", request.getMessageId());
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.TRANSLATION_EXCHANGE,
                 RabbitMQConfig.TRANSLATION_REQUEST_ROUTING_KEY,
                 request
         );
-         rabbitTemplate.convertAndSend(
-                RabbitMQConfig.TRANSLATION_EXCHANGE,
-                RabbitMQConfig.TRANSLATION_TIMEOUT_ROUTING_KEY,
-                request
-        );
-
-        log.info("번역 요청 및 타임아웃 마커 발행 완료 - 메시지 ID: {}", request.getMessageId());
+        log.info("번역 요청 발행 완료 - 메시지 ID: {}", request.getMessageId());
     }
 }
