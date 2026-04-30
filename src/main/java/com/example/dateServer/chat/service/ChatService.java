@@ -52,10 +52,14 @@ public class ChatService {
     private final MongoTemplate mongoTemplate;
 
     public ChatMessage saveMessage(Long roomId, Long senderId, String content) {
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+        ChatRoom chatRoom = chatRoomRepository.findByIdWithUsers(roomId)
                 .orElseThrow(() -> new ChatRoomNotFoundException(roomId));
         if (chatRoom.getStatus() == ChatRoomStatus.CLOSED) {
             throw new ChatRoomClosedException();
+        }
+        Match match = chatRoom.getMatch();
+        if (!match.getUser1().getId().equals(senderId) && !match.getUser2().getId().equals(senderId)) {
+            throw new ChatRoomAccessDeniedException();
         }
 
         ChatMessage message = ChatMessage.builder()
@@ -101,6 +105,13 @@ public class ChatService {
     }
 
     public void markMessagesAsRead(Long roomId, Long readerId) {
+        ChatRoom chatRoom = chatRoomRepository.findByIdWithUsers(roomId)
+                .orElseThrow(() -> new ChatRoomNotFoundException(roomId));
+        Match match = chatRoom.getMatch();
+        if (!match.getUser1().getId().equals(readerId) && !match.getUser2().getId().equals(readerId)) {
+            throw new ChatRoomAccessDeniedException();
+        }
+
         Query query = new Query(Criteria.where("roomId").is(roomId)
                 .and("senderId").ne(readerId)
                 .and("readAt").isNull());

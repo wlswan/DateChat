@@ -77,7 +77,7 @@ public class AuthController {
             @CookieValue(name = "refreshToken", required = false) String refreshToken,
             HttpServletRequest request) {
         String accessToken = resolveToken(request);
-        authService.logout(refreshToken, accessToken);
+        authService.logout(accessToken, refreshToken);
 
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)

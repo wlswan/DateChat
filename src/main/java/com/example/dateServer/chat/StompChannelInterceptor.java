@@ -57,7 +57,6 @@ public class StompChannelInterceptor implements ChannelInterceptor {
                 handleSubscribe(accessor);
                 break;
             case SEND:
-                validateAuthentication(accessor, "메시지 전송");
                 break;
             case DISCONNECT:
                 handleDisconnect(accessor);
@@ -130,16 +129,6 @@ public class StompChannelInterceptor implements ChannelInterceptor {
     private void handleDisconnect(StompHeaderAccessor accessor) {
         Long userId = getUserIdFromSession(accessor);
         log.info("WebSocket 연결 종료: userId={}", userId);
-    }
-
-
-    private void validateAuthentication(StompHeaderAccessor accessor, String action) {
-        Long userId = getUserIdFromSession(accessor);
-
-        if (userId == null) {
-            log.warn("{} 거부: 인증되지 않은 사용자", action);
-            throw new InvalidAccessTokenException();
-        }
     }
 
     private Long getUserIdFromSession(StompHeaderAccessor accessor) {
