@@ -1,5 +1,6 @@
 package com.example.dateServer.chat.entity;
 
+import com.example.dateServer.chat.exception.ChatRoomAccessDeniedException;
 import com.example.dateServer.like.entity.Match;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -36,6 +37,12 @@ public class ChatRoom {
 
     public void close() {
         this.status = ChatRoomStatus.CLOSED;
+    }
+
+    public void checkParticipant(Long userId) {
+        if (!match.getUser1().getId().equals(userId) && !match.getUser2().getId().equals(userId)) {
+            throw new ChatRoomAccessDeniedException();
+        }
     }
 
     @Builder

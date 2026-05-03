@@ -133,11 +133,12 @@ WebSocket 기반 실시간 메시지 전송
 |------|------|
 | `PENDING` | 번역 요청 발행, 결과 대기 중 |
 | `SUCCESS` | 번역 완료 |
-| `FAILED` | 30초 TTL 초과 → DLQ 이동 → 실패 처리 |
+| `FAILED` | 30초 경과한 PENDING 메시지를 스케줄러가 FAILED 처리 |
 
 #### 번역 실패 처리
 
-- **RabbitMQ DLQ**: 번역 요청 시 timeout queue에 메시지를 같이 발행하고 30초 TTL 만료 시 DLQ로 이동해서 FAILED 처리
+- **DB 폴링 스케줄러**: 5초 간격으로 PENDING 상태가 30초 이상 경과한 메시지를 조회해 FAILED로 변경
+- **분산 락**: Redis `setIfAbsent`로 다중 서버 환경에서 스케줄러가 한 인스턴스에서만 실행되도록 보장
 - **WebSocket 알림**: FAILED 상태는 DB에 저장되기 때문에 실시간 알림을 못 받아도 채팅방 재진입 시 확인 가능
 - **재시도**: 클라이언트에서 실패한 메시지 재전송 요청 가능
 

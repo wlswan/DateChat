@@ -9,7 +9,6 @@ import com.example.dateServer.chat.entity.ChatRoom;
 import com.example.dateServer.chat.entity.ChatRoomStatus;
 import com.example.dateServer.chat.exception.ChatMessageAccessDeniedException;
 import com.example.dateServer.chat.exception.ChatMessageNotFoundException;
-import com.example.dateServer.chat.exception.ChatRoomAccessDeniedException;
 import com.example.dateServer.chat.exception.ChatRoomClosedException;
 import com.example.dateServer.chat.exception.ChatRoomNotFoundException;
 import com.example.dateServer.chat.repository.ChatMessageRepository;
@@ -57,10 +56,7 @@ public class ChatService {
         if (chatRoom.getStatus() == ChatRoomStatus.CLOSED) {
             throw new ChatRoomClosedException();
         }
-        Match match = chatRoom.getMatch();
-        if (!match.getUser1().getId().equals(senderId) && !match.getUser2().getId().equals(senderId)) {
-            throw new ChatRoomAccessDeniedException();
-        }
+        chatRoom.checkParticipant(senderId);
 
         ChatMessage message = ChatMessage.builder()
                 .roomId(roomId)
@@ -74,10 +70,7 @@ public class ChatService {
             Long userId, Long roomId, String cursor, int size) {
 
         ChatRoom chatRoom = chatRoomRepository.findByIdWithUsers(roomId).orElseThrow(() -> new ChatRoomNotFoundException(roomId));
-        Match match = chatRoom.getMatch();
-        if(!match.getUser1().getId().equals(userId) && !match.getUser2().getId().equals(userId)){
-            throw new ChatRoomAccessDeniedException();
-        }
+        chatRoom.checkParticipant(userId);
         Pageable pageable = PageRequest.of(0, size + 1);
         List<ChatMessage> messages;
 
@@ -107,10 +100,7 @@ public class ChatService {
     public void markMessagesAsRead(Long roomId, Long readerId) {
         ChatRoom chatRoom = chatRoomRepository.findByIdWithUsers(roomId)
                 .orElseThrow(() -> new ChatRoomNotFoundException(roomId));
-        Match match = chatRoom.getMatch();
-        if (!match.getUser1().getId().equals(readerId) && !match.getUser2().getId().equals(readerId)) {
-            throw new ChatRoomAccessDeniedException();
-        }
+        chatRoom.checkParticipant(readerId);
 
         Query query = new Query(Criteria.where("roomId").is(roomId)
                 .and("senderId").ne(readerId)
@@ -184,10 +174,7 @@ public class ChatService {
     @Transactional
     public void leaveRoom(Long userId, Long roomId) {
         ChatRoom chatRoom = chatRoomRepository.findByIdWithUsers(roomId).orElseThrow(() -> new ChatRoomNotFoundException(roomId));
-        Match match = chatRoom.getMatch();
-        if (!match.getUser1().getId().equals(userId) && !match.getUser2().getId().equals(userId)) {
-            throw new ChatRoomAccessDeniedException();
-        }
+        chatRoom.checkParticipant(userId);
         chatRoom.close();
     }
 

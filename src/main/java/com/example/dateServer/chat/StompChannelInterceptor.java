@@ -5,7 +5,6 @@ import com.example.dateServer.auth.entity.User;
 import com.example.dateServer.auth.exception.InvalidAccessTokenException;
 import com.example.dateServer.auth.exception.UserNotFoundException;
 import com.example.dateServer.auth.repository.UserRepository;
-import com.example.dateServer.chat.exception.ChatRoomAccessDeniedException;
 import com.example.dateServer.chat.exception.ChatRoomClosedException;
 import com.example.dateServer.common.Lang;
 import com.example.dateServer.chat.entity.ChatRoom;
@@ -111,11 +110,9 @@ public class StompChannelInterceptor implements ChannelInterceptor {
             throw new ChatRoomClosedException();
         }
 
-        Match match = chatRoom.getMatch();
-        if (!match.getUser1().getId().equals(userId) && !match.getUser2().getId().equals(userId)) {
-            throw new ChatRoomAccessDeniedException();
-        }
+        chatRoom.checkParticipant(userId);
         if(!destination.endsWith(".events")) {
+            Match match = chatRoom.getMatch();
             Lang targetLang = match.getUser1().getId().equals(userId) ? match.getUser2().getLang() : match.getUser1().getLang();
 
             Map<String, Object> sessionAttributes = accessor.getSessionAttributes();

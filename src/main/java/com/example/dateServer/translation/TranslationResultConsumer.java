@@ -30,12 +30,18 @@ public class TranslationResultConsumer {
 
         if (!result.isSuccess()) {
             log.error("번역 실패 - 메시지 ID: {}, 에러: {}", result.getMessageId(), result.getErrorMessage());
-            mongoTemplate.updateFirst(
+            UpdateResult r = mongoTemplate.updateFirst(
                     Query.query(Criteria.where("_id").is(result.getMessageId())
                             .and("translationStatus").is(TranslationStatus.PENDING.name())),
                     new Update().set("translationStatus", TranslationStatus.FAILED.name()),
                     ChatMessage.class
             );
+
+            if (r.getModifiedCount() == 0) {
+                log.info("실패 결과 도착했으나 이미 종료 상태 - 메시지 ID: {}", result.getMessageId());
+                return;
+            }
+
             simpMessagingTemplate.convertAndSend("/topic/chat." + result.getRoomId(),
                     ChatMessageResponse.translationFailed(result.getRoomId(), result.getSenderId(), result.getMessageId()));
             return;
