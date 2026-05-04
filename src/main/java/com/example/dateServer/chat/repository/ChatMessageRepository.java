@@ -19,8 +19,5 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage,Strin
     List<ChatMessage> findByRoomIdAndIdLessThanOrderByIdDesc(
             Long roomId, String cursor, Pageable pageable);
 
-    Optional<ChatMessage> findTopByRoomIdOrderByIdDesc(Long roomId);
-
-    long countByRoomIdAndSenderIdNotAndReadAtIsNull(Long roomId, Long senderId);
 
 }

@@ -19,11 +19,16 @@ import com.example.dateServer.translation.TranslationRequestPublisher;
 import com.example.dateServer.translation.dto.TranslationRequest;
 import com.example.dateServer.translation.embedding.TranslationService;
 import com.example.dateServer.chat.TranslationStatus;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -32,9 +37,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-
-
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -180,6 +184,11 @@ public class ChatService {
 
     public List<ChatRoomResponse> getChatRooms(Long userId) {
         List<ChatRoom> chatRooms = chatRoomRepository.findRoomsWithMatchAndUsersByUserId(userId);
+        if (chatRooms.isEmpty()) return List.of();
+
+        List<Long> roomIds = chatRooms.stream().map(ChatRoom::getId).collect(Collectors.toList());
+        Map<Long, LastMessageResult> lastMessages = findLastMessagesByRoomIds(roomIds);
+        Map<Long, Long> unreadCounts = countUnreadByRoomIds(roomIds, userId);
 
         return chatRooms.stream()
                 .map(chatRoom -> {
@@ -188,12 +197,7 @@ public class ChatService {
                             ? match.getUser2()
                             : match.getUser1();
 
-                    ChatMessage lastMessage = chatMessageRepository
-                            .findTopByRoomIdOrderByIdDesc(chatRoom.getId())
-                            .orElse(null);
-
-                    long unreadCount = chatMessageRepository
-                            .countByRoomIdAndSenderIdNotAndReadAtIsNull(chatRoom.getId(), userId);
+                    LastMessageResult lastMsg = lastMessages.get(chatRoom.getId());
 
                     return ChatRoomResponse.builder()
                             .roomId(chatRoom.getId())
@@ -202,11 +206,53 @@ public class ChatService {
                             .partnerProfileImageUrl(partner.getProfileImageUrl())
                             .partnerLang(partner.getLang())
                             .status(chatRoom.getStatus())
-                            .lastMessageContent(lastMessage != null ? lastMessage.getContent() : null)
-                            .lastMessageAt(lastMessage != null ? lastMessage.getCreatedAt() : null)
-                            .unreadCount(unreadCount)
+                            .lastMessageContent(lastMsg != null ? lastMsg.getContent() : null)
+                            .lastMessageAt(lastMsg != null ? lastMsg.getCreatedAt() : null)
+                            .unreadCount(unreadCounts.getOrDefault(chatRoom.getId(), 0L))
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    private Map<Long, LastMessageResult> findLastMessagesByRoomIds(List<Long> roomIds) {
+        Aggregation agg = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("roomId").in(roomIds)),
+                Aggregation.sort(Sort.by(Sort.Direction.DESC, "_id")),
+                Aggregation.group("roomId")
+                        .first("content").as("content")
+                        .first("createdAt").as("createdAt")
+        );
+        return mongoTemplate.aggregate(agg, "messages", LastMessageResult.class)
+                .getMappedResults().stream()
+                .collect(Collectors.toMap(LastMessageResult::getId, r -> r));
+    }
+
+    private Map<Long, Long> countUnreadByRoomIds(List<Long> roomIds, Long userId) {
+        Aggregation agg = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("roomId").in(roomIds)
+                        .and("senderId").ne(userId)
+                        .and("readAt").isNull()),
+                Aggregation.group("roomId").count().as("count")
+        );
+        return mongoTemplate.aggregate(agg, "messages", UnreadCountResult.class)
+                .getMappedResults().stream()
+                .collect(Collectors.toMap(UnreadCountResult::getId, UnreadCountResult::getCount));
+    }
+
+    @Getter
+    @NoArgsConstructor
+    private static class LastMessageResult {
+        @Id
+        private Long id;
+        private String content;
+        private LocalDateTime createdAt;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    private static class UnreadCountResult {
+        @Id
+        private Long id;
+        private long count;
     }
 }
