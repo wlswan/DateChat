@@ -17,6 +17,9 @@ public interface UserRepository extends JpaRepository<User,Long> {
 
     boolean existsByEmail(String email);
 
+    @Query("SELECT u FROM User u JOIN FETCH u.userPreference WHERE u.id = :userId")
+    Optional<User> findByIdWithPreference(@Param("userId") Long userId);
+
     @Query("SELECT u FROM User u WHERE u.id != :userId " +
             "AND u.gender != :gender " +
             "AND u.lang != :lang " +

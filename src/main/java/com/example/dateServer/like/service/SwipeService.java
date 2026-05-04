@@ -3,7 +3,7 @@ package com.example.dateServer.like.service;
 import com.example.dateServer.auth.entity.User;
 import com.example.dateServer.auth.entity.UserPreference;
 import com.example.dateServer.auth.exception.UserNotFoundException;
-import com.example.dateServer.auth.repository.UserPreferenceRepository;
+import com.example.dateServer.auth.exception.UserPreferenceNotFoundException;
 import com.example.dateServer.auth.repository.UserRepository;
 import com.example.dateServer.chat.entity.ChatRoom;
 import com.example.dateServer.chat.repository.ChatRoomRepository;
@@ -28,14 +28,13 @@ public class SwipeService {
     private final UserRepository userRepository;
     private final MatchRepository matchRepository;
     private final ChatRoomRepository chatRoomRepository;
-    private final UserPreferenceRepository userPreferenceRepository;
 
     @Transactional(readOnly = true)
     public List<UserProfileResponse> getDiscoverUsers(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(()->new UserNotFoundException(userId));
-
-        UserPreference pref = userPreferenceRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("선호 설정이 없습니다."));
+        User user = userRepository.findByIdWithPreference(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        UserPreference pref = user.getUserPreference();
+        if (pref == null) throw new UserPreferenceNotFoundException(userId);
 
         return userRepository.findDiscoverCandidates(userId
                         , user.getGender()
@@ -48,21 +47,23 @@ public class SwipeService {
 
     @Transactional
     public SwipeResult swipeAndMatch(Long fromUserId, SwipeRequest request) {
-        User fromUser = userRepository.findById(fromUserId).orElseThrow(() -> new UserNotFoundException(fromUserId));
-        User toUser = userRepository.findById(request.getToUserId()).orElseThrow(() -> new UserNotFoundException(request.getToUserId()));
+        Long toUserId = request.getToUserId();
 
-        if (swipeRepository.existsByFromUserAndToUser(fromUser, toUser)) {
+        if (swipeRepository.existsByFromUser_IdAndToUser_Id(fromUserId, toUserId)) {
             throw new IllegalStateException();
         }
+
+        User fromUser = userRepository.getReferenceById(fromUserId); //프록시
+        User toUser = userRepository.getReferenceById(toUserId);
 
         Swipe swipe = Swipe.builder()
                 .fromUser(fromUser)
                 .toUser(toUser)
-                .type(request.getType()) //pass or like
+                .type(request.getType())
                 .build();
         Swipe savedSwipe = swipeRepository.save(swipe);
 
-        if (savedSwipe.getType() == SwipeType.LIKE && swipeRepository.existsByFromUserAndToUserAndType(toUser, fromUser, SwipeType.LIKE)) {
+        if (savedSwipe.getType() == SwipeType.LIKE && swipeRepository.existsByFromUser_IdAndToUser_IdAndType(toUserId, fromUserId, SwipeType.LIKE)) {
             return createMatchSafely(fromUser, toUser);
         }
         return new SwipeResult(false, null);

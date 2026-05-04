@@ -1,6 +1,5 @@
 package com.example.dateServer.like.repository;
 
-import com.example.dateServer.auth.entity.User;
 import com.example.dateServer.like.entity.Swipe;
 import com.example.dateServer.like.entity.SwipeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,9 +11,9 @@ import java.util.List;
 
 @Repository
 public interface SwipeRepository extends JpaRepository<Swipe,Long> {
-    boolean existsByFromUserAndToUser(User fromUser, User toUser);
+    boolean existsByFromUser_IdAndToUser_Id(Long fromUserId, Long toUserId);
 
-    boolean existsByFromUserAndToUserAndType(User fromUser, User toUser, SwipeType type);
+    boolean existsByFromUser_IdAndToUser_IdAndType(Long fromUserId, Long toUserId, SwipeType type);
 
     @Query("SELECT s.toUser.id FROM Swipe s WHERE s.fromUser.id = :userId")
     List<Long> findSwipedUserIdsByMe(@Param("userId") Long userId);

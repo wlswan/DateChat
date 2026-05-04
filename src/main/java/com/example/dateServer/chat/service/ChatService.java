@@ -127,20 +127,23 @@ public class ChatService {
 
         if (cached.isPresent()) {
             String translated = cached.get();
-            ChatMessage message = chatMessageRepository.findById(messageId).orElse(null);
-            if (message != null) {
-                message.updateTranslationSuccess(translated); // SUCCESS 상태 포함
-                chatMessageRepository.save(message);
-            }
+            mongoTemplate.updateFirst(
+                    Query.query(Criteria.where("_id").is(messageId)),
+                    new Update()
+                            .set("translationStatus", TranslationStatus.SUCCESS.name())
+                            .set("translatedContent", translated),
+                    ChatMessage.class
+            );
             simpMessagingTemplate.convertAndSend("/topic/chat." + roomId, ChatMessageResponse.translated(roomId, senderId, messageId, translated));
             log.info("캐시 히트로 즉시 번역 완료: {}", messageId);
             return;
         }
 
-        chatMessageRepository.findById(messageId).ifPresent(message -> {
-            message.updateTranslationStatus(TranslationStatus.PENDING);
-            chatMessageRepository.save(message);
-        });
+        mongoTemplate.updateFirst(
+                Query.query(Criteria.where("_id").is(messageId)),
+                new Update().set("translationStatus", TranslationStatus.PENDING.name()),
+                ChatMessage.class
+        );
         simpMessagingTemplate.convertAndSend("/topic/chat." + roomId,
                 ChatMessageResponse.translationPending(roomId, senderId, messageId));
 
@@ -157,10 +160,12 @@ public class ChatService {
             translationRequestPublisher.publish(request);
         } catch (Exception e) {
             log.error("번역 요청 발행 실패 - 메시지 ID: {}", messageId, e);
-            chatMessageRepository.findById(messageId).ifPresent(message -> {
-                message.updateTranslationStatus(TranslationStatus.FAILED);
-                chatMessageRepository.save(message);
-            });
+            mongoTemplate.updateFirst(
+                    Query.query(Criteria.where("_id").is(messageId)
+                            .and("translationStatus").is(TranslationStatus.PENDING.name())),
+                    new Update().set("translationStatus", TranslationStatus.FAILED.name()),
+                    ChatMessage.class
+            );
             simpMessagingTemplate.convertAndSend("/topic/chat." + roomId, ChatMessageResponse.translationFailed(roomId, senderId, messageId));
         }
     }
