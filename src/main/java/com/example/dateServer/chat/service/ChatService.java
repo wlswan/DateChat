@@ -171,6 +171,10 @@ public class ChatService {
         if (!message.getSenderId().equals(senderId)) {
             throw new ChatMessageAccessDeniedException();
         }
+        if (message.getTranslationStatus() != TranslationStatus.FAILED) {
+            log.warn("번역 재시도 불가 - 상태가 FAILED가 아님: messageId={}, status={}", messageId, message.getTranslationStatus());
+            return;
+        }
         log.info("번역 재시도 요청 - 메시지 ID: {}, {} → {}", messageId, sourceLang, targetLang);
         requestTranslation(messageId, roomId, senderId, content, sourceLang, targetLang);
     }

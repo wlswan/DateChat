@@ -6,6 +6,7 @@ import com.example.dateServer.chat.dto.ChatEventBroadcast;
 import com.example.dateServer.chat.dto.ChatRetryTranslationRequest;
 import com.example.dateServer.chat.exception.ChatMessageAccessDeniedException;
 import com.example.dateServer.chat.exception.ChatMessageNotFoundException;
+import com.example.dateServer.chat.exception.ChatRoomAccessDeniedException;
 import com.example.dateServer.chat.exception.ChatRoomClosedException;
 import com.example.dateServer.chat.exception.ChatRoomNotFoundException;
 import com.example.dateServer.chat.dto.ChatReadRequest;
@@ -78,6 +79,13 @@ public class ChattingController {
                 "/topic/chat." + request.getRoomId() + ".events",
                 new ChatEventBroadcast(ChatEventType.READ, request.getRoomId(), userId));
     }
+    @MessageExceptionHandler(ChatRoomAccessDeniedException.class)
+    @SendToUser("/queue/errors")
+    public ChatErrorResponse handleChatRoomAccessDeniedException(ChatRoomAccessDeniedException e) {
+        log.warn("채팅방 접근 권한 없음: {}", e.getMessage());
+        return new ChatErrorResponse(e.getMessage());
+    }
+
     @MessageExceptionHandler(ChatRoomClosedException.class)
     @SendToUser("/queue/errors")
     public ChatErrorResponse handleChatRoomClosedException(ChatRoomClosedException e) {
